@@ -1,5 +1,4 @@
-Creative Commons Attribution-ShareAlike 4.0 International Public
-License
+# Creative Commons Attribution-ShareAlike 4.0 International Public License
 
 By exercising the Licensed Rights (defined below), You accept and agree
 to be bound by the terms and conditions of this Creative Commons
@@ -11,9 +10,9 @@ such rights in consideration of benefits the Licensor receives from
 making the Licensed Material available under these terms and
 conditions.
 
-Section 1 -- Definitions.
+## Section 1 -- Definitions.
 
-a. Adapted Material means material subject to Copyright and Similar
+- a. Adapted Material means material subject to Copyright and Similar
 Rights that is derived from or based upon the Licensed Material
 and in which the Licensed Material is translated, altered,
 arranged, transformed, or otherwise modified in a manner requiring
@@ -22,67 +21,55 @@ Licensor. For purposes of this Public License, where the Licensed
 Material is a musical work, performance, or sound recording,
 Adapted Material is always produced where the Licensed Material is
 synched in timed relation with a moving image.
-
-b. Adapter's License means the license You apply to Your Copyright
+- b. Adapter's License means the license You apply to Your Copyright
 and Similar Rights in Your contributions to Adapted Material in
 accordance with the terms and conditions of this Public License.
-
-c. BY-SA Compatible License means a license listed at
+- c. BY-SA Compatible License means a license listed at
 creativecommons.org/compatiblelicenses, approved by Creative
 Commons as essentially the equivalent of this Public License.
-
-d. Copyright and Similar Rights means copyright and/or similar rights
+- d. Copyright and Similar Rights means copyright and/or similar rights
 closely related to copyright including, without limitation,
 performance, broadcast, sound recording, and Sui Generis Database
 Rights, without regard to how the rights are labeled or
 categorized. For purposes of this Public License, the rights
 specified in Section 2(b)(1)-(2) are not Copyright and Similar
 Rights.
-
-e. Effective Technological Measures means those measures that, in the
+- e. Effective Technological Measures means those measures that, in the
 absence of proper authority, may not be circumvented under laws
 fulfilling obligations under Article 11 of the WIPO Copyright
 Treaty adopted on December 20, 1996, and/or similar international
 agreements.
-
-f. Exceptions and Limitations means fair use, fair dealing, and/or
+- f. Exceptions and Limitations means fair use, fair dealing, and/or
 any other exception or limitation to Copyright and Similar Rights
 that applies to Your use of the Licensed Material.
-
-g. License Elements means the license attributes listed in the name
+- g. License Elements means the license attributes listed in the name
 of a Creative Commons Public License. The License Elements of this
 Public License are Attribution and ShareAlike.
-
-h. Licensed Material means the artistic or literary work, database,
+- h. Licensed Material means the artistic or literary work, database,
 or other material to which the Licensor applied this Public
 License.
-
-i. Licensed Rights means the rights granted to You subject to the
+- i. Licensed Rights means the rights granted to You subject to the
 terms and conditions of this Public License, which are limited to
 all Copyright and Similar Rights that apply to Your use of the
 Licensed Material and that the Licensor has authority to license.
-
-j. Licensor means the individual(s) or entity(ies) granting rights
+- j. Licensor means the individual(s) or entity(ies) granting rights
 under this Public License.
-
-k. Share means to provide material to the public by any means or
+- k. Share means to provide material to the public by any means or
 process that requires permission under the Licensed Rights, such
 as reproduction, public display, public performance, distribution,
 dissemination, communication, or importation, and to make material
 available to the public including in ways that members of the
 public may access the material from a place and at a time
 individually chosen by them.
-
-l. Sui Generis Database Rights means rights other than copyright
+- l. Sui Generis Database Rights means rights other than copyright
 resulting from Directive 96/9/EC of the European Parliament and of
 the Council of 11 March 1996 on the legal protection of databases,
 as amended and/or succeeded, as well as other essentially
 equivalent rights anywhere in the world.
-
-m. You means the individual or entity exercising the Licensed Rights
+- m. You means the individual or entity exercising the Licensed Rights
 under this Public License. Your has a corresponding meaning.
 
-Section 2 -- Scope.
+## Section 2 -- Scope.
 
 a. License grant.
 
@@ -164,7 +151,7 @@ b. Other rights.
           licensing scheme. In all other cases the Licensor expressly
           reserves any right to collect such royalties.
 
-Section 3 -- License Conditions.
+## Section 3 -- License Conditions.
 
 Your exercise of the Licensed Rights is expressly made subject to the
 following conditions.
@@ -230,7 +217,7 @@ b. ShareAlike.
           Measures to, Adapted Material that restrict exercise of the
           rights granted under the Adapter's License You apply.
 
-Section 4 -- Sui Generis Database Rights.
+## Section 4 -- Sui Generis Database Rights.
 
 Where the Licensed Rights include Sui Generis Database Rights that
 apply to Your use of the Licensed Material:
@@ -252,7 +239,7 @@ For the avoidance of doubt, this Section 4 supplements and does not
 replace Your obligations under this Public License where the Licensed
 Rights include other Copyright and Similar Rights.
 
-Section 5 -- Disclaimer of Warranties and Limitation of Liability.
+## Section 5 -- Disclaimer of Warranties and Limitation of Liability.
 
 a. UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY THE LICENSOR, TO THE
 EXTENT POSSIBLE, THE LICENSOR OFFERS THE LICENSED MATERIAL AS-IS
@@ -280,7 +267,7 @@ above shall be interpreted in a manner that, to the extent
 possible, most closely approximates an absolute disclaimer and
 waiver of all liability.
 
-Section 6 -- Term and Termination.
+## Section 6 -- Term and Termination.
 
 a. This Public License applies for the term of the Copyright and
 Similar Rights licensed here. However, if You fail to comply with
@@ -317,7 +304,7 @@ b. Any arrangements, understandings, or agreements regarding the
 Licensed Material not stated herein are separate from and
 independent of the terms and conditions of this Public License.
 
-Section 8 -- Interpretation.
+## Section 8 -- Interpretation.
 
 a. For the avoidance of doubt, this Public License does not, and
 shall not be interpreted to, reduce, limit, restrict, or impose

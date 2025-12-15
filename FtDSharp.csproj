@@ -1,0 +1,86 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Exclude the CodeGen project folder from compilation -->
+  <ItemGroup>
+    <Compile Remove="FtDSharp.CodeGen\**" />
+    <None Remove="FtDSharp.CodeGen\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Ftd">
+      <HintPath>ftd-managed\Ftd.dll</HintPath>
+    </Reference>
+    <Reference Include="Modding">
+      <HintPath>ftd-managed\Modding.dll</HintPath>
+    </Reference>
+    <Reference Include="Effects">
+      <HintPath>ftd-managed\Effects.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>ftd-managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="GridCasts">
+      <HintPath>ftd-managed\GridCasts.dll</HintPath>
+    </Reference>
+    <Reference Include="Core">
+      <HintPath>ftd-managed\Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Common">
+      <HintPath>ftd-managed\Common.dll</HintPath>
+    </Reference>
+    <Reference Include="sLua">
+      <HintPath>ftd-managed\sLua.dll</HintPath>
+    </Reference>
+    <Reference Include="sLuaFtd">
+      <HintPath>ftd-managed\sLuaFtd.dll</HintPath>
+    </Reference>
+    <Reference Include="sLuaFtdGenerated">
+      <HintPath>ftd-managed\sLuaFtdGenerated.dll</HintPath>
+    </Reference>
+    <Reference Include="Ui">
+      <HintPath>ftd-managed\Ui.dll</HintPath>
+    </Reference>
+    <Reference Include="Ai">
+      <HintPath>ftd-managed\Ai.dll</HintPath>
+    </Reference>
+    <Reference Include="DataManagement">
+      <HintPath>ftd-managed\DataManagement.dll</HintPath>
+    </Reference>
+    <Reference Include="Breadboards">
+      <HintPath>ftd-managed\Breadboards.dll</HintPath>
+    </Reference>
+    <Reference Include="Localisation">
+      <HintPath>..\ftd-managed\Localisation.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.11.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="$(OutputPath)FtdSharp.dll" DestinationFolder="$(ProjectDir)" />
+    <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Collections.Immutable.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Reflection.Metadata.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Text.Encoding.CodePages.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Memory.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Runtime.CompilerServices.Unsafe.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Numerics.Vectors.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+  </Target>
+
+</Project>

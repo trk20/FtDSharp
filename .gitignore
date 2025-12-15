@@ -1,0 +1,42 @@
+# Build outputs
+bin/
+obj/
+
+**/Debug/
+**/.cache
+
+**/Generated/
+
+# DLL files (except reference DLLs in specific directories)
+*.dll
+!ftd-managed/*.dll
+!0Harmony.dll
+
+# Visual Studio / VS Code
+.vs/
+copilot-instructions.md
+.vscode/
+*.user
+*.suo
+
+# FtD DLLs
+ftd-managed/*
+
+# NuGet packages
+packages/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+*.sln
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

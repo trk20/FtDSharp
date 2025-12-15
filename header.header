@@ -1,0 +1,9 @@
+{
+  "Authors": "trk20",
+  "Version": "00000000-0000-0000-0000-000000000004",
+  "ComponentId": {
+    "Guid": "672af341-65bd-4ff3-9bbe-4f159d0a9874",
+    "Name": "FtDSharp"
+  },
+  "Description": "C# in FtD"
+}

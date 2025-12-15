@@ -1,0 +1,8 @@
+{
+  "name": "FtDSharp",
+  "version": "0.1.5",
+  "gameversion": "4.3.0",
+  "conflicts": [],
+  "depends": [],
+  "filename": "0Harmony.dll,Microsoft.CodeAnalysis.dll,Microsoft.CodeAnalysis.CSharp.dll,System.Collections.Immutable.dll,System.Reflection.Metadata.dll,System.Text.Encoding.CodePages.dll,System.Memory.dll,System.Runtime.CompilerServices.Unsafe.dll,System.Numerics.Vectors.dll,FtDSharp.dll"
+}

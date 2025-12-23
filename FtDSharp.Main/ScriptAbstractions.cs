@@ -15,10 +15,12 @@ namespace FtDSharp
         ILogApi Log { get; }
         float TimeSinceStart { get; }
         long TicksSinceStart { get; }
-        /// <summary>Raw access to the block type storage for optimized block lookup.</summary>
+        /// <summary>Raw access to the block type storage.</summary>
         IBlockToConstructBlockTypeStorage? BlockTypeStorage { get; }
         /// <summary>All AI Mainframes on the construct.</summary>
         IReadOnlyList<IMainframe> Mainframes { get; }
+        /// <summary>All valid incoming projectile warnings.</summary>
+        IReadOnlyList<IProjectileWarning> IncomingProjectiles { get; }
     }
 
     public interface ILogApi

@@ -49,6 +49,8 @@ namespace FtDSharp
         public float Pitch { get; }
         /// <summary> Current roll angle in degrees (-180 to 180). </summary>
         public float Roll { get; }
+        /// <summary> The fleet this construct belongs to. </summary>
+        public IFleet Fleet { get; }
     }
 
     public interface IMainConstruct : IFriendlyConstruct

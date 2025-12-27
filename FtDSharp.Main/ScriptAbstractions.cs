@@ -21,6 +21,14 @@ namespace FtDSharp
         IReadOnlyList<IMainframe> Mainframes { get; }
         /// <summary>All valid incoming projectile warnings.</summary>
         IReadOnlyList<IProjectileWarning> IncomingProjectiles { get; }
+        /// <summary>All friendly constructs including the current construct.</summary>
+        IReadOnlyList<IFriendlyConstruct> Friendlies { get; }
+        /// <summary>All friendly constructs excluding the current construct.</summary>
+        IReadOnlyList<IFriendlyConstruct> FriendliesExcludingSelf { get; }
+        /// <summary>All fleets containing friendly constructs.</summary>
+        IReadOnlyList<IFleet> Fleets { get; }
+        /// <summary>The fleet the current construct belongs to.</summary>
+        IFleet MyFleet { get; }
     }
 
     public interface ILogApi

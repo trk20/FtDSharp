@@ -11,7 +11,7 @@ namespace FtDSharp
         /// <summary>
         /// All AI Mainframes on the construct, sorted by priority (lower = higher priority).
         /// </summary>
-        public static IReadOnlyList<IMainframe> Mainframes => ScriptApi.Context?.Mainframes ?? (IReadOnlyList<IMainframe>)System.Array.Empty<IMainframe>();
+        public static IReadOnlyList<IMainframe> Mainframes => ScriptApi.Context?.Mainframes ?? System.Array.Empty<IMainframe>();
 
         /// <summary>
         /// The highest priority AI Mainframe on the construct.

@@ -6,7 +6,7 @@ namespace FtDSharp.Facades
     internal class PropulsionFacade : IPropulsion
     {
 
-        // todo: extra axis controls
+        // todo: custom axis controls
         private readonly MainConstruct _construct;
 
         public PropulsionFacade(MainConstruct construct)
@@ -74,5 +74,55 @@ namespace FtDSharp.Facades
             get => GetAxis(ControlType.RollRight);
             set => SetAxis(ControlType.RollRight, ControlType.RollLeft, value);
         }
+
+        public float A
+        {
+            get => _construct.ControlsRestricted.Last.GetInput(ControlType.A);
+            set => _construct.ControlsRestricted.SetRequest(ControlType.A, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
+        public float B
+        {
+            get => _construct.ControlsRestricted.Last.GetInput(ControlType.B);
+            set => _construct.ControlsRestricted.SetRequest(ControlType.B, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
+        public float C
+        {
+            get => _construct.ControlsRestricted.Last.GetInput(ControlType.C);
+            set => _construct.ControlsRestricted.SetRequest(ControlType.C, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
+        public float D
+        {
+            get => _construct.ControlsRestricted.Last.GetInput(ControlType.D);
+            set => _construct.ControlsRestricted.SetRequest(ControlType.D, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
+        public float E
+        {
+            get => _construct.ControlsRestricted.Last.GetInput(ControlType.E);
+            set => _construct.ControlsRestricted.SetRequest(ControlType.E, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
+        public float MainDrive
+        {
+            get => _construct.ControlsRestricted.Last.GetDrive(Drive.Main);
+            set => _construct.ControlsRestricted.SetDrive(Drive.Main, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+
+        }
+
+        public float SecondaryDrive
+        {
+            get => _construct.ControlsRestricted.Last.GetDrive(Drive.Secondary);
+            set => _construct.ControlsRestricted.SetDrive(Drive.Secondary, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
+        public float TertiaryDrive
+        {
+            get => _construct.ControlsRestricted.Last.GetDrive(Drive.Tertiary);
+            set => _construct.ControlsRestricted.SetDrive(Drive.Tertiary, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
+        }
+
     }
 }

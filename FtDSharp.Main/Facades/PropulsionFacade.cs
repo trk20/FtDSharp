@@ -109,7 +109,6 @@ namespace FtDSharp.Facades
         {
             get => _construct.ControlsRestricted.Last.GetDrive(Drive.Main);
             set => _construct.ControlsRestricted.SetDrive(Drive.Main, float.IsNaN(value) ? 0 : Mathf.Clamp(value, -1f, 1f));
-
         }
 
         public float SecondaryDrive

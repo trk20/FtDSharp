@@ -2,33 +2,17 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using BrilliantSkies.Core.Types;
-using BrilliantSkies.Core.Help;
 
 namespace FtDSharp.Facades
 {
-    public class MainConstructFacade : IMainConstruct
+    /// <summary>
+    /// Facade for the script's own construct. Extends FriendlyConstructFacade with control capabilities.
+    /// </summary>
+    public class MainConstructFacade : FriendlyConstructFacade, IMainConstruct
     {
-        private readonly MainConstruct _construct;
-
-        public MainConstructFacade(MainConstruct construct)
+        public MainConstructFacade(MainConstruct construct) : base(construct)
         {
-            _construct = construct;
         }
-
-        public int UniqueId => _construct.UniqueId;
-        public Vector3 Position => _construct.myTransform.position;
-        public Vector3 Velocity => _construct.PartPhysicsRestricted.iVelocities.VelocityVector;
-        public string Name => _construct.GetBlueprintName();
-        public Quaternion Rotation => _construct.myTransform.rotation;
-        public Vector3 Forward => _construct.myTransform.forward;
-        public float Yaw => Angles.FixRot180To180(_construct.myTransform.eulerAngles.y);
-        public float Pitch => Angles.FixRot180To180(_construct.myTransform.eulerAngles.x);
-        public float Roll => Angles.FixRot180To180(_construct.myTransform.eulerAngles.z);
-        public float Stability => _construct.StabilityFactor;
-        public float Volume => _construct.AllBasics.GetVolumeOfAloveBlocksIncludingSubConstructable();
-        public int AliveBlockCount => _construct.AllBasics.GetNumberAliveBlocksIncludingSubConstructables();
-        public int BlockCount => _construct.AllBasics.GetNumberBlocksIncludingSubConstructables();
 
         /// <summary> Enumerate all blocks on the construct and subconstructs. </summary>
         public IEnumerable<IBlock> GetAllBlocks()
@@ -80,7 +64,6 @@ namespace FtDSharp.Facades
             get => _missiles.Value;
         }
 
-        // todo: optimize
         public bool TryGetBlockById(int id, out IBlock? block)
         {
             if (Blocks.All.FirstOrDefault(b => b.UniqueId == id) is IBlock foundBlock)
@@ -94,8 +77,7 @@ namespace FtDSharp.Facades
 
         public List<T> GetAllBlocksOfType<T>() where T : IBlock
         {
-            // TODO: Implement block iteration
-            return new List<T>();
+            return Blocks.OfType<T>().ToList();
         }
 
         private PropulsionFacade? _propulsion;

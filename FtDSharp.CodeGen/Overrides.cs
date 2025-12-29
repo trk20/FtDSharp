@@ -14,6 +14,8 @@ public static class Overrides
         ["direction"] = "BarrelAimDirection",
         ["lerpDirection"] = "BarrelCurrentDirection",
         ["SavedReloadTime"] = "ReloadTime",
+        ["SpeedReader"] = "ProjectileSpeed",
+        ["HasFiredReader"] = "ShotsFiredSinceLastCheck",
     };
 
     public static readonly Dictionary<string, (string NewName, string RequiredDataPackagePattern)> ConditionalRenames = new()

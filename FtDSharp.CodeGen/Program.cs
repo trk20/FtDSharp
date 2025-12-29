@@ -17,8 +17,8 @@ class Program
             .CreateLogger();
 
         var positionalArgs = args.Where(a => !a.StartsWith("-")).ToArray();
-        var outputApiPath = positionalArgs.ElementAtOrDefault(0) ?? Path.Combine("..", "API", "Generated");
-        var outputFacadePath = positionalArgs.ElementAtOrDefault(1) ?? Path.Combine("..", "src", "Facades", "Generated");
+        var outputApiPath = positionalArgs.ElementAtOrDefault(0) ?? Path.Combine("..", "FtDSharp.API", "Generated");
+        var outputFacadePath = positionalArgs.ElementAtOrDefault(1) ?? Path.Combine("..", "FtDSharp.Main", "Facades", "Generated");
 
         var pipeline = new GeneratorPipeline();
         pipeline.Run(outputApiPath, outputFacadePath);

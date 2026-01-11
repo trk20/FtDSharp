@@ -11,6 +11,6 @@ public class NaiveMissileGuidance : IFtDSharp
     {
         var target = AI.HighestPriorityMainframe.PrimaryTarget;
         if (target == null) return;
-        foreach (var missile in Weapons.Missiles) missile.AimAt(target.Position);
+        foreach (var missile in Guidance.Missiles) missile.AimAt(target.Position);
     }
 }

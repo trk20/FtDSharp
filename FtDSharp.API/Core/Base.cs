@@ -3,34 +3,60 @@ using UnityEngine;
 
 namespace FtDSharp
 {
-    public interface IConstruct
+    /// <summary>
+    /// Represents something that can be tracked/targeted - has position, velocity, and acceleration.
+    /// </summary>
+    public interface ITargetable
+    {
+        /// <summary>Current world position.</summary>
+        Vector3 Position { get; }
+        /// <summary>Current velocity vector.</summary>
+        Vector3 Velocity { get; }
+        /// <summary>Current acceleration vector.</summary>
+        Vector3 Acceleration { get; }
+    }
+
+    public interface IConstruct : ITargetable
     {
         public int UniqueId { get; }
         public string Name { get; }
-        public Vector3 Position { get; }
-        public Vector3 Velocity { get; }
         public float Volume { get; }
         public int AliveBlockCount { get; }
         public int BlockCount { get; }
         public float Stability { get; }
     }
 
-    public interface IBlock
+    public interface IBlock : System.IEquatable<IBlock>
     {
         /// <summary> The construct this block belongs to. </summary>
         public IFriendlyConstruct ParentConstruct { get; }
-        /// <summary> Unique identifier for the block. </summary>
+        /// <summary>
+        /// The parent block if this block is on a subconstruct (turret, spinblock, piston, etc).
+        /// Null if the block is on the main construct body.
+        /// </summary>
+        public IBlock? Parent { get; }
+        /// <summary>
+        /// True if this block is mounted directly on the main construct (not on a turret/spinblock).
+        /// </summary>
+        public bool IsOnRoot { get; }
+        /// <summary> Unique identifier for the block (unique within block type). </summary>
         public int UniqueId { get; }
-        /// <summary> Custom name of the block, if any. </summary>
+        /// <summary> User-assigned custom name of the block (set via Q menu). </summary>
         public string? CustomName { get; }
+        /// <summary> The block type name (e.g., "Turret Block One Axis"). </summary>
+        public string BlockTypeName { get; }
         /// <summary>Local position of the block relative to its parent construct.</summary>
         public Vector3 LocalPosition { get; }
+        /// <summary>World position of the block.</summary>
+        public Vector3 WorldPosition { get; }
         /// <summary>Local forward direction of the block.</summary>
         public Vector3 LocalForward { get; }
         /// <summary>Local up direction of the block.</summary>
         public Vector3 LocalUp { get; }
         /// <summary>Local rotation of the block.</summary>
         public Quaternion LocalRotation { get; }
+        /// <summary>World rotation of the block.</summary>
+        public Quaternion WorldRotation { get; }
         /// <summary>Current health of the block.</summary>
         public float CurrentHealth { get; }
         /// <summary>Maximum health of the block.</summary>

@@ -23,16 +23,10 @@ namespace FtDSharp
     /// <summary>
     /// Represents a detected incoming projectile warning from munition warners, radar, etc.
     /// </summary>
-    public interface IProjectileWarning
+    public interface IProjectileWarning : ITargetable
     {
         /// <summary> Type of the incoming projectile. </summary>
         ProjectileType Type { get; }
-        /// <summary> Current world position of the projectile. </summary>
-        Vector3 Position { get; }
-        /// <summary> Current velocity of the projectile. </summary>
-        Vector3 Velocity { get; }
-        /// <summary> Current acceleration of the projectile. </summary>
-        Vector3 Acceleration { get; }
         /// <summary> Diameter of the projectile in meters. </summary>
         float Diameter { get; }
         /// <summary> Current health of the projectile. </summary>
@@ -53,7 +47,6 @@ namespace FtDSharp
 
     /// <summary>
     /// Static accessor for projectile warning information.
-    /// Use with: using static FtDSharp.Warnings;
     /// </summary>
     public static class Warnings
     {

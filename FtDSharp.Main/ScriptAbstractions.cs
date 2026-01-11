@@ -29,6 +29,10 @@ namespace FtDSharp
         IReadOnlyList<IFleet> Fleets { get; }
         /// <summary>The fleet the current construct belongs to.</summary>
         IFleet MyFleet { get; }
+        /// <summary>All weapons on the construct (excluding turrets).</summary>
+        IReadOnlyList<IWeapon> Weapons { get; }
+        /// <summary>All turrets on the construct.</summary>
+        IReadOnlyList<ITurret> Turrets { get; }
     }
 
     public interface ILogApi

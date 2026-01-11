@@ -15,6 +15,8 @@ namespace FtDSharp
         private readonly FrameCache<IReadOnlyList<IFriendlyConstruct>> _friendliesExcludingSelfCache;
         private readonly FrameCache<IReadOnlyList<IFleet>> _fleetsCache;
         private readonly FrameCache<IFleet> _myFleetCache;
+        private readonly FrameCache<IReadOnlyList<IWeapon>> _weaponsCache;
+        private readonly FrameCache<IReadOnlyList<ITurret>> _turretsCache;
         private MainConstruct? _construct;
         private MainConstructFacade? _facade;
         private long _ticks = 0;
@@ -27,6 +29,8 @@ namespace FtDSharp
             _friendliesExcludingSelfCache = new FrameCache<IReadOnlyList<IFriendlyConstruct>>(GetFriendliesExcludingSelf);
             _fleetsCache = new FrameCache<IReadOnlyList<IFleet>>(GetFleets);
             _myFleetCache = new FrameCache<IFleet>(GetMyFleet!);
+            _weaponsCache = new FrameCache<IReadOnlyList<IWeapon>>(GetWeaponsExcludingTurrets);
+            _turretsCache = new FrameCache<IReadOnlyList<ITurret>>(GetTurrets);
         }
 
         public IMainConstruct Self => _facade!;
@@ -41,6 +45,8 @@ namespace FtDSharp
         public IReadOnlyList<IFriendlyConstruct> FriendliesExcludingSelf => _friendliesExcludingSelfCache.Value;
         public IReadOnlyList<IFleet> Fleets => _fleetsCache.Value;
         public IFleet MyFleet => _myFleetCache.Value;
+        public IReadOnlyList<IWeapon> Weapons => _weaponsCache.Value;
+        public IReadOnlyList<ITurret> Turrets => _turretsCache.Value;
 
         private IReadOnlyList<IMainframe> GetMainframes()
         {
@@ -99,6 +105,109 @@ namespace FtDSharp
             var force = _construct?.GetForce();
             if (force?.Fleet == null) return null;
             return new FleetFacade(force.Fleet);
+        }
+
+        /// <summary>
+        /// Collects all weapons from the main construct and all subconstructs.
+        /// </summary>
+        private IEnumerable<WeaponFacade> GetAllWeaponFacades()
+        {
+            if (_construct == null) yield break;
+
+            var allConstruct = _construct as AllConstruct;
+            if (allConstruct == null) yield break;
+
+            // Get weapons from main construct
+            var mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
+            if (mainWeapons != null)
+            {
+                foreach (var weapon in mainWeapons)
+                {
+                    if (weapon != null && weapon.IsAlive)
+                    {
+                        yield return new WeaponFacade(weapon, allConstruct);
+                    }
+                }
+            }
+
+            // Get weapons from all subconstructs
+            var subConstructs = allConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
+            if (subConstructs != null)
+            {
+                foreach (var subConstruct in subConstructs)
+                {
+                    if (subConstruct is AllConstruct subAll)
+                    {
+                        var subWeapons = subAll.WeaponryRestricted?.Weapons;
+                        if (subWeapons != null)
+                        {
+                            foreach (var weapon in subWeapons)
+                            {
+                                if (weapon != null && weapon.IsAlive)
+                                {
+                                    yield return new WeaponFacade(weapon, subAll);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private IReadOnlyList<IWeapon> GetWeaponsExcludingTurrets()
+        {
+            return GetAllWeaponFacades()
+                .Where(w => w.WeaponType != WeaponType.Turret)
+                .Cast<IWeapon>()
+                .ToList();
+        }
+
+        private IReadOnlyList<ITurret> GetTurrets()
+        {
+            if (_construct == null) return new List<ITurret>();
+
+            var allConstruct = _construct as AllConstruct;
+            if (allConstruct == null) return new List<ITurret>();
+
+            var turrets = new List<ITurret>();
+
+            // Get turrets from main construct
+            var mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
+            if (mainWeapons != null)
+            {
+                foreach (var weapon in mainWeapons)
+                {
+                    if (weapon is Turrets turret && turret.IsAlive)
+                    {
+                        turrets.Add(new TurretFacade(turret, allConstruct));
+                    }
+                }
+            }
+
+            // Get turrets from subconstructs
+            var subConstructs = allConstruct.AllBasicsRestricted?.SubConstructList;
+            if (subConstructs != null)
+            {
+                foreach (var subConstruct in subConstructs)
+                {
+                    if (subConstruct is AllConstruct subAll)
+                    {
+                        var subWeapons = subAll.WeaponryRestricted?.Weapons;
+                        if (subWeapons != null)
+                        {
+                            foreach (var weapon in subWeapons)
+                            {
+                                if (weapon is Turrets turret && turret.IsAlive)
+                                {
+                                    turrets.Add(new TurretFacade(turret, subAll));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return turrets;
         }
 
         internal void IncrementTick() => _ticks++;

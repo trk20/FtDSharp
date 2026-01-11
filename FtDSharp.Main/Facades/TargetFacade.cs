@@ -18,6 +18,7 @@ namespace FtDSharp.Facades
         public string Name => _target.C.GetName();
         public Vector3 Position => _target.GetTargetCom();
         public Vector3 Velocity => _target.GetTargetVelocity();
+        public Vector3 Acceleration => _target.GetTargetAcceleration();
         public float Volume => _target.C.Volume;
 
         // Properties usually only exposed via AI target priority

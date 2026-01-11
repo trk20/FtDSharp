@@ -24,6 +24,7 @@ namespace FtDSharp.Facades
         public string Name => _construct.GetBlueprintName();
         public Vector3 Position => _construct.myTransform.position;
         public Vector3 Velocity => _construct.PartPhysicsRestricted.iVelocities.VelocityVector;
+        public Vector3 Acceleration => Vector3.zero; // fix later, not available directly
         public float Volume => _construct.AllBasics.GetVolumeOfAloveBlocksIncludingSubConstructable();
         public int AliveBlockCount => _construct.AllBasics.GetNumberAliveBlocksIncludingSubConstructables();
         public int BlockCount => _construct.AllBasics.GetNumberBlocksIncludingSubConstructables();

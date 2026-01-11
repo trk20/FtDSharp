@@ -98,7 +98,6 @@ namespace FtDSharp
             {
                 diagnostics = (hash, LastCompileTime, Array.Empty<Diagnostic>());
                 _startUtc = DateTime.UtcNow;
-                Tick(ctx, 0f);
                 return true;
             }
             return false;
@@ -116,7 +115,7 @@ namespace FtDSharp
             }
             catch (Exception ex)
             {
-                _log.Error("Error during script execution: " + ex.Message);
+                _log.Error($"Error during script execution: {ex.Message}\n{ex.StackTrace}");
                 _instance = null; // deactivate on error
             }
         }

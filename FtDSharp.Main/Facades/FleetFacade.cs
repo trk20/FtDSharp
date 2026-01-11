@@ -34,7 +34,7 @@ namespace FtDSharp.Facades
                 return Array.Empty<IFriendlyConstruct>();
 
             return _fleet.forces
-                .Where(f => f?.C != null && !f.C.Destroyed)
+                .Where(f => f?.C != null && f.C.Exists)
                 .Select(f => new FriendlyConstructFacade(f.C))
                 .Cast<IFriendlyConstruct>()
                 .ToList();

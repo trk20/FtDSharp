@@ -79,11 +79,9 @@ namespace FtDSharp.Facades
         /// </summary>
         internal AimResult AimAtDirectionInternal(Vector3 direction)
         {
-            var statusReturn = new WeaponStatusReturn()
-            {
-                JustTheTopLevel = true
-            };
+            var statusReturn = new WeaponStatusReturn();
             statusReturn.Setup(enumAimType.direction, direction, Vector3.zero, 0);
+            statusReturn.JustTheTopLevel = true; // Setup sets this to false so can't set with constructor
             _weapon.CheckDirection(statusReturn);
 
             // Read results from weapon status based on weapon type
@@ -198,6 +196,10 @@ namespace FtDSharp.Facades
 
         private Vector3 GetAimDirection()
         {
+            if (_weapon is Turrets turret)
+            {
+                return turret.FiringArc.LastGoodLocalDirection;
+            }
             if (_weapon is CannonFiringPiece cannon)
             {
                 return cannon.direction;
@@ -222,25 +224,18 @@ namespace FtDSharp.Facades
             return _weapon.GameWorldRotation * Vector3.forward;
         }
 
-        private WeaponType DetermineWeaponType()
+        private WeaponType DetermineWeaponType() => _weapon switch
         {
-            // First check for turrets explicitly
-            if (_weapon is Turrets)
-            {
-                return WeaponType.Turret;
-            }
+            Turrets => WeaponType.Turret,
+            AdvCannonFiringPiece => WeaponType.APS,
+            CannonFiringPiece => WeaponType.CRAM,
+            MissileControl => WeaponType.Missile,
+            LaserWeaponBase => WeaponType.Laser,
+            PlasmaMantlet or PlasmaMantletAA => WeaponType.Plasma,
+            ParticleCannon => WeaponType.ParticleCannon,
+            FlamerMain => WeaponType.Flamer,
+            _ => WeaponType.Unknown
+        };
 
-            return _weapon switch
-            {
-                AdvCannonFiringPiece => WeaponType.APS,
-                CannonFiringPiece => WeaponType.CRAM,
-                MissileControl => WeaponType.Missile,
-                LaserWeaponBase => WeaponType.Laser,
-                PlasmaMantlet or PlasmaMantletAA => WeaponType.Plasma,
-                ParticleCannon => WeaponType.ParticleCannon,
-                FlamerMain => WeaponType.Flamer,
-                _ => WeaponType.Unknown
-            };
-        }
     }
 }

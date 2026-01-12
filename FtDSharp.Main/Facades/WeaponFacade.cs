@@ -3,6 +3,7 @@ using BrilliantSkies.Core.Ballistics.External.AimingWithoutDrag;
 using BrilliantSkies.Core.Logger;
 using BrilliantSkies.Ftd.Planets;
 using Ftd.Blocks.Flamers;
+using HarmonyLib;
 using UnityEngine;
 
 namespace FtDSharp.Facades
@@ -57,6 +58,12 @@ namespace FtDSharp.Facades
 
         public float ProjectileSpeed => _weapon.SpeedReader;
 
+        /// <summary>
+        /// Checks if this weapon is ready to fire based on weapon-type-specific conditions.
+        /// Note: Future improvement - expose the specific reason why a weapon can't fire.
+        /// </summary>
+        public bool IsReady => CheckIsReady();
+
         public AimResult AimAt(Vector3 worldPosition)
         {
             return AimAtInternal(worldPosition);
@@ -90,10 +97,9 @@ namespace FtDSharp.Facades
             {
                 return new AimResult(false, false, false);
             }
-
             return new AimResult(
-                canFire: (statusReturn.Missile.CanFire + statusReturn.Cannon.CanFire + statusReturn.Laser.CanFire + statusReturn.Plasma.CanFire + statusReturn.ParticleCannon.CanFire + statusReturn.Flamer.CanFire) > 0,
-                cantFire: (statusReturn.Missile.CantFire + statusReturn.Cannon.CantFire + statusReturn.Laser.CantFire + statusReturn.Plasma.CantFire + statusReturn.ParticleCannon.CantFire + statusReturn.Flamer.CantFire) > 0,
+                isOnTarget: (statusReturn.Missile.CanFire + statusReturn.Cannon.CanFire + statusReturn.Laser.CanFire + statusReturn.Plasma.CanFire + statusReturn.ParticleCannon.CanFire + statusReturn.Flamer.CanFire) > 0,
+                isBlocked: (statusReturn.Missile.CantFire + statusReturn.Cannon.CantFire + statusReturn.Laser.CantFire + statusReturn.Plasma.CantFire + statusReturn.ParticleCannon.CantFire + statusReturn.Flamer.CantFire) > 0,
                 canAim: (statusReturn.Missile.CanAim + statusReturn.Cannon.CanAim + statusReturn.Laser.CanAim + statusReturn.Plasma.CanAim + statusReturn.ParticleCannon.CanAim + statusReturn.Flamer.CanAim) > 0
             );
         }
@@ -103,14 +109,14 @@ namespace FtDSharp.Facades
             return Track(targetPosition, Vector3.zero, Vector3.zero, TrackOptions.Default).AimResult;
         }
 
-        public AimResult Track(Vector3 targetPosition, Vector3 targetVelocity)
+        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
         {
-            return Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default).AimResult;
+            return Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default);
         }
 
-        public AimResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
+        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
         {
-            return Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default).AimResult;
+            return Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default);
         }
 
         public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
@@ -155,18 +161,18 @@ namespace FtDSharp.Facades
             }
 
             var aimResult = AimAtDirectionInternal(aimDirection);
-            return new TrackResult(aimResult, flightTime, aimPoint, isTerrainBlocking);
+            return new TrackResult(aimResult, flightTime, aimPoint, isTerrainBlocking, IsReady);
         }
 
-        public AimResult Track(ITargetable targetable)
+        public TrackResult Track(ITargetable targetable)
         {
-            if (targetable == null) return new AimResult(false, false, false);
-            return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default).AimResult;
+            if (targetable == null) return new TrackResult(new AimResult(false, false, false), 0f, Vector3.zero, false, false);
+            return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default);
         }
 
         public TrackResult Track(ITargetable targetable, TrackOptions options)
         {
-            if (targetable == null) return new TrackResult(new AimResult(false, false, false), 0f, Vector3.zero, false);
+            if (targetable == null) return new TrackResult(new AimResult(false, false, false), 0f, Vector3.zero, false, false);
             return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, options);
         }
 
@@ -187,7 +193,7 @@ namespace FtDSharp.Facades
         public bool TryFireAt(Vector3 worldPosition)
         {
             var result = AimAt(worldPosition);
-            if (result.CanFire)
+            if (result.IsOnTarget && IsReady)
             {
                 return Fire();
             }
@@ -237,5 +243,240 @@ namespace FtDSharp.Facades
             _ => WeaponType.Unknown
         };
 
+        #region IsReady Check Implementation
+        // Field accessors for private fields using Harmony's AccessTools
+        // These are cached at class level for performance
+
+        // APS fields
+        private static readonly AccessTools.FieldRef<AdvCannonFiringPiece, float>? ApsRailEnergy =
+            AccessTools.FieldRefAccess<AdvCannonFiringPiece, float>("_railEnergy");
+
+        // Plasma fields  
+        private static readonly AccessTools.FieldRef<PlasmaMantlet, int>? PlasmaCurrentBurstShots =
+            AccessTools.FieldRefAccess<PlasmaMantlet, int>("_currentBurstShots");
+        private static readonly AccessTools.FieldRef<PlasmaMantletAA, int>? PlasmaAACurrentBurstShots =
+            AccessTools.FieldRefAccess<PlasmaMantletAA, int>("_currentBurstShots");
+
+        // Flamer fields
+        private static readonly AccessTools.FieldRef<FlamerMain, float>? FlamerReloadFuelNeeded =
+            AccessTools.FieldRefAccess<FlamerMain, float>("_reloadFuelNeeded");
+        private static readonly AccessTools.FieldRef<FlamerMain, float>? FlamerCurrentFuel =
+            AccessTools.FieldRefAccess<FlamerMain, float>("_currentFuel");
+
+        /// <summary>
+        /// Checks weapon-specific conditions to determine if the weapon is ready to fire.
+        /// Based on internal game WeaponFire methods for each weapon type.
+        /// Note: Future improvement - expose the specific reason why a weapon can't fire.
+        /// </summary>
+        private bool CheckIsReady()
+        {
+            return _weapon switch
+            {
+                AdvCannonFiringPiece aps => CheckApsReady(aps),
+                CannonFiringPiece cram => CheckCramReady(cram),
+                LaserWeaponBase laser => CheckLaserReady(laser),
+                PlasmaMantletAA plasmaAA => CheckPlasmaAAReady(plasmaAA),
+                PlasmaMantlet plasma => CheckPlasmaReady(plasma),
+                FlamerMain flamer => CheckFlamerReady(flamer),
+                MissileControl => true, // Missile controller checking tbd
+                ParticleCannon pac => pac.PCLoaded && pac.WeaponSyncData.SyncFireReady(pac, pac.CheckTimes.LastFireTime),
+                Turrets => true, // Turrets delegate to their weapons
+                _ => true // Unknown weapons assumed ready
+            };
+        }
+
+        private bool CheckApsReady(AdvCannonFiringPiece aps)
+        {
+            try
+            {
+                // Check barrel exists
+                if (aps.BarrelSystem.BarrelLength == 0) return false;
+
+                // Check gauge increases
+                if (!aps.Node.HasEnoughGaugeIncreases) return false;
+
+                // Check shell ammo
+                if (aps.Node.ShellRacks.ShellCount == 0) return false;
+
+                // Check shell is loaded
+                var nextShell = aps.Node.ShellRacks.GetNextShell(false);
+                if (nextShell == null) return false;
+
+                // Check barrel is ready
+                var nextBarrel = aps.BarrelSystem.GetNextBarrelReady();
+                if (nextBarrel == null) return false;
+
+                // Check weapon sync
+                if (!aps.WeaponSyncData.SyncFireReady(aps, aps.CheckTimes.LastFireTime)) return false;
+
+                // Check railgun energy (if applicable)
+                if (aps.Node.RailgunCapacity > 0f && ApsRailEnergy != null)
+                {
+                    var energy = _allConstruct.Main.GetForce().Energy;
+                    var railEnergy = ApsRailEnergy(aps);
+                    var energyNeeded = Math.Min(aps.Data.EnergyToUse, nextShell.Propellant.MaxRailDraw);
+
+                    // Check if semi-charged firing is allowed
+                    if (!aps.Data.AllowSemiChargedRailFiring && railEnergy < energyNeeded)
+                        return false;
+
+                    // Check minimum energy threshold
+                    if (aps.Data.DontFireBelow > energy.GetFraction(0f))
+                        return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return true; // Fallback to ready if check fails
+            }
+        }
+
+        private bool CheckCramReady(CannonFiringPiece cram)
+        {
+            try
+            {
+                // Check ammo
+                if (cram.Node.Stats.TotalPerSec == 0) return false;
+
+                // Check packing
+                if (cram.PackTime < cram.Node.Stats.MaxPackTime * cram.CramData.MinimumPackPercentage / 100f - 0.001f)
+                    return false;
+
+                // Check weapon sync
+                if (!cram.WeaponSyncData.SyncFireReady(cram, cram.CheckTimes.LastFireTime)) return false;
+
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private bool CheckLaserReady(LaserWeaponBase laser)
+        {
+            try
+            {
+                // Check weapon sync
+                if (!laser.WeaponSyncData.SyncFireReady(laser, laser.CheckTimes.LastFireTime)) return false;
+
+                // Note: Ammo check would require accessing internal storage methods
+                // The weapon's internal CanFire already accounts for basic ammo availability
+
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private bool CheckPlasmaReady(PlasmaMantlet plasma)
+        {
+            try
+            {
+                // Check node and chamber
+                if (plasma.Node == null || !plasma.IsReady || plasma.Node.ChamberData.ChargeCapacity == 0)
+                    return false;
+
+                // Check charges ready
+                int projectileCount = plasma.GetProjectileCount();
+                int chargeTarget = plasma.GetCurrentChargeTarget(plasma.IsFullyCharged || plasma.IsStalled);
+                int currentBurstShots = PlasmaCurrentBurstShots != null ? PlasmaCurrentBurstShots(plasma) : 0;
+                int chargesNeeded = projectileCount * chargeTarget * (plasma.CannonData.BurstSize.Us - currentBurstShots);
+
+                if (plasma.ChargesReady < chargesNeeded && !plasma.IsFullyCharged && !plasma.IsStalled)
+                    return false;
+
+                // Check temperature
+                if (plasma.Temperature > 1000f ||
+                    (plasma.Temperature > plasma.CannonData.TemperatureLimit.Us && currentBurstShots >= plasma.CannonData.BurstSize.Us))
+                    return false;
+
+                // Check weapon sync
+                if (!plasma.WeaponSyncData.SyncFireReady(plasma, plasma.CheckTimes.LastFireTime)) return false;
+
+                // Check energy
+                float acceleratorEnergy = plasma.GetAcceleratorEnergyPerCharge();
+                float energyMultiplier = (int)plasma.EmitterType == 1 ? 0.5f : 1f; // Destabilizer type
+                float energyNeeded = energyMultiplier * projectileCount * chargeTarget * acceleratorEnergy;
+
+                var energy = _allConstruct.Main.GetForce().Energy;
+                if (energy.Quantity < energyNeeded) return false;
+
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private bool CheckPlasmaAAReady(PlasmaMantletAA plasma)
+        {
+            try
+            {
+                // Check node and chamber
+                if (plasma.Node == null || !plasma.IsReady || plasma.Node.ChamberData.ChargeCapacity == 0)
+                    return false;
+
+                int projectileCount = plasma.GetProjectileCount();
+                int chargeTarget = plasma.GetCurrentChargeTarget(plasma.IsFullyCharged || plasma.IsStalled);
+                int currentBurstShots = PlasmaAACurrentBurstShots != null ? PlasmaAACurrentBurstShots(plasma) : 0;
+                int chargesNeeded = projectileCount * chargeTarget * (plasma.CannonData.BurstSize.Us - currentBurstShots);
+
+                if (plasma.ChargesReady < chargesNeeded && !plasma.IsFullyCharged && !plasma.IsStalled)
+                    return false;
+
+                if (plasma.Temperature > 1000f ||
+                    (plasma.Temperature > plasma.CannonData.TemperatureLimit.Us && currentBurstShots >= plasma.CannonData.BurstSize.Us))
+                    return false;
+
+                if (!plasma.WeaponSyncData.SyncFireReady(plasma, plasma.CheckTimes.LastFireTime)) return false;
+
+                float acceleratorEnergy = plasma.GetAcceleratorEnergyPerCharge();
+                float energyMultiplier = (int)plasma.EmitterType == 1 ? 0.5f : 1f;
+                float energyNeeded = energyMultiplier * projectileCount * chargeTarget * acceleratorEnergy;
+
+                var energy = _allConstruct.Main.GetForce().Energy;
+                if (energy.Quantity < energyNeeded) return false;
+
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private bool CheckFlamerReady(FlamerMain flamer)
+        {
+            try
+            {
+                // Check fuel using private field accessors
+                if (FlamerReloadFuelNeeded != null && FlamerCurrentFuel != null)
+                {
+                    var reloadNeeded = FlamerReloadFuelNeeded(flamer);
+                    var currentFuel = FlamerCurrentFuel(flamer);
+
+                    if (reloadNeeded > 0.001f || flamer.Range < 100 || currentFuel == 0f)
+                        return false;
+                }
+
+                // Check position (not underwater)
+                if (flamer.GetFirePoint(0f).y < 0.5f)
+                    return false;
+
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        #endregion
     }
 }

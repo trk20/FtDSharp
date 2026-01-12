@@ -61,17 +61,20 @@ namespace FtDSharp
     /// </summary>
     public readonly struct AimResult
     {
-        /// <summary>Whether the weapon can fire at the target.</summary>
-        public bool CanFire { get; }
-        /// <summary>Whether the weapon cannot fire at the target.</summary>
-        public bool CantFire { get; }
-        /// <summary>Whether the weapon can aim at the target.</summary>
+        /// <summary>
+        /// Whether the weapon is on target and within traversal limits.
+        /// Note: This does NOT mean the weapon can actually fire - check IsReady for that.
+        /// </summary>
+        public bool IsOnTarget { get; }
+        /// <summary>Whether the weapon is blocked from aiming (e.g., cannot traverse to target).</summary>
+        public bool IsBlocked { get; }
+        /// <summary>Whether the weapon can physically aim at the target position.</summary>
         public bool CanAim { get; }
 
-        public AimResult(bool canFire, bool cantFire, bool canAim)
+        public AimResult(bool isOnTarget, bool isBlocked, bool canAim)
         {
-            CanFire = canFire;
-            CantFire = cantFire;
+            IsOnTarget = isOnTarget;
+            IsBlocked = isBlocked;
             CanAim = canAim;
         }
     }
@@ -152,21 +155,102 @@ namespace FtDSharp
         public Vector3 AimPoint { get; }
         /// <summary>Whether terrain would block the shot.</summary>
         public bool IsTerrainBlocking { get; }
+        /// <summary>
+        /// Whether the weapon(s) are ready to fire (ammo, reload, energy, etc.).
+        /// Combined with IsOnTarget to determine if weapon will actually fire.
+        /// </summary>
+        public bool IsReady { get; }
 
-        public TrackResult(AimResult aimResult, float flightTime, Vector3 aimPoint, bool isTerrainBlocking)
+        public TrackResult(AimResult aimResult, float flightTime, Vector3 aimPoint, bool isTerrainBlocking, bool isReady)
         {
             AimResult = aimResult;
             FlightTime = flightTime;
             AimPoint = aimPoint;
             IsTerrainBlocking = isTerrainBlocking;
+            IsReady = isReady;
         }
 
-        /// <summary>Whether the weapon can fire at the target.</summary>
-        public bool CanFire => AimResult.CanFire;
-        /// <summary>Whether the weapon cannot fire at the target.</summary>
-        public bool CantFire => AimResult.CantFire;
-        /// <summary>Whether the weapon can aim at the target.</summary>
+        /// <summary>
+        /// Whether the weapon is on target and within traversal limits.
+        /// Combined with IsReady to determine if weapon will actually fire.
+        /// </summary>
+        public bool IsOnTarget => AimResult.IsOnTarget;
+        /// <summary>Whether the weapon can physically aim at the target.</summary>
         public bool CanAim => AimResult.CanAim;
+        /// <summary>
+        /// Whether the weapon can actually fire right now.
+        /// True only if both IsOnTarget AND IsReady are true.
+        /// </summary>
+        public bool CanFire => AimResult.IsOnTarget && IsReady;
+    }
+
+    /// <summary>
+    /// Interface for weapon control operations (aiming, tracking, firing).
+    /// Implemented by both individual weapons and weapon controllers.
+    /// </summary>
+    public interface IWeaponControl
+    {
+        /// <summary>
+        /// Aims at a world-space position (direct aim, no lead calculation).
+        /// </summary>
+        /// <param name="worldPosition">The target position in world space.</param>
+        /// <returns>Information about the aim status.</returns>
+        AimResult AimAt(Vector3 worldPosition);
+
+        /// <summary>
+        /// Tracks a moving target with lead calculation.
+        /// </summary>
+        /// <param name="targetPosition">Current target position in world space.</param>
+        /// <param name="targetVelocity">Target velocity vector.</param>
+        /// <returns>Tracking result with aim status and calculated values.</returns>
+        TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity);
+
+        /// <summary>
+        /// Tracks a moving target with lead calculation including acceleration.
+        /// </summary>
+        /// <param name="targetPosition">Current target position in world space.</param>
+        /// <param name="targetVelocity">Target velocity vector.</param>
+        /// <param name="targetAcceleration">Target acceleration vector.</param>
+        /// <returns>Tracking result with aim status and calculated values.</returns>
+        TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration);
+
+        /// <summary>
+        /// Tracks any targetable object (ITarget, IProjectileWarning, IConstruct) with lead calculation.
+        /// </summary>
+        /// <param name="targetable">The object to track.</param>
+        /// <returns>Tracking result with aim status and calculated values.</returns>
+        TrackResult Track(ITargetable targetable);
+
+        /// <summary>
+        /// Tracks a targetable object with custom tracking options.
+        /// </summary>
+        /// <param name="targetable">The object to track.</param>
+        /// <param name="options">Tracking options (gravity, arc preference, projectile speed override).</param>
+        /// <returns>Tracking result with aim status and calculated values.</returns>
+        TrackResult Track(ITargetable targetable, TrackOptions options);
+
+        /// <summary>
+        /// Tracks a position/velocity/acceleration with custom tracking options.
+        /// </summary>
+        /// <param name="targetPosition">Current target position in world space.</param>
+        /// <param name="targetVelocity">Target velocity vector.</param>
+        /// <param name="targetAcceleration">Target acceleration vector.</param>
+        /// <param name="options">Tracking options (gravity, arc preference, projectile speed override).</param>
+        /// <returns>Tracking result with aim status and calculated values.</returns>
+        TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options);
+
+        /// <summary>
+        /// Attempts to fire the weapon(s).
+        /// </summary>
+        /// <returns>True if any weapon fired successfully.</returns>
+        bool Fire();
+
+        /// <summary>
+        /// Aims at a position and fires if on target.
+        /// </summary>
+        /// <param name="worldPosition">The target position to aim at.</param>
+        /// <returns>True if any weapon fired successfully.</returns>
+        bool TryFireAt(Vector3 worldPosition);
     }
 
     /// <summary>
@@ -188,8 +272,9 @@ namespace FtDSharp
 
     /// <summary>
     /// Base interface for all controllable weapons.
+    /// Extends IWeaponControl for unified aiming, tracking, and firing operations.
     /// </summary>
-    public interface IWeapon : IBlock
+    public interface IWeapon : IBlock, IWeaponControl
     {
         /// <summary>The type of this weapon.</summary>
         WeaponType WeaponType { get; }
@@ -204,66 +289,10 @@ namespace FtDSharp
         float ProjectileSpeed { get; }
 
         /// <summary>
-        /// Aims the weapon at a world-space position (direct aim, no lead).
+        /// Whether the weapon is ready to fire (has ammo, is reloaded, has energy, not cooling down, etc.).
+        /// Note: Future improvement - expose the specific reason why a weapon can't fire.
         /// </summary>
-        /// <param name="worldPosition">The target position in world space.</param>
-        /// <returns>Information about the weapon's aim status.</returns>
-        AimResult AimAt(Vector3 worldPosition);
-
-        /// <summary>
-        /// Tracks a moving target with lead calculation.
-        /// </summary>
-        /// <param name="targetPosition">Current target position in world space.</param>
-        /// <param name="targetVelocity">Target velocity vector.</param>
-        /// <returns>Information about the weapon's aim status.</returns>
-        AimResult Track(Vector3 targetPosition, Vector3 targetVelocity);
-
-        /// <summary>
-        /// Tracks a moving target with lead calculation including acceleration.
-        /// </summary>
-        /// <param name="targetPosition">Current target position in world space.</param>
-        /// <param name="targetVelocity">Target velocity vector.</param>
-        /// <param name="targetAcceleration">Target acceleration vector.</param>
-        /// <returns>Information about the weapon's aim status.</returns>
-        AimResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration);
-
-        /// <summary>
-        /// Tracks any targetable object (ITarget, IProjectileWarning, IConstruct) with lead calculation.
-        /// </summary>
-        /// <param name="targetable">The object to track.</param>
-        /// <returns>Information about the weapon's aim status.</returns>
-        AimResult Track(ITargetable targetable);
-
-        /// <summary>
-        /// Tracks a targetable object with custom tracking options.
-        /// </summary>
-        /// <param name="targetable">The object to track.</param>
-        /// <param name="options">Tracking options (gravity, arc preference, projectile speed override).</param>
-        /// <returns>Extended tracking result with flight time and aim point.</returns>
-        TrackResult Track(ITargetable targetable, TrackOptions options);
-
-        /// <summary>
-        /// Tracks a position/velocity/acceleration with custom tracking options.
-        /// </summary>
-        /// <param name="targetPosition">Current target position in world space.</param>
-        /// <param name="targetVelocity">Target velocity vector.</param>
-        /// <param name="targetAcceleration">Target acceleration vector.</param>
-        /// <param name="options">Tracking options (gravity, arc preference, projectile speed override).</param>
-        /// <returns>Extended tracking result with flight time and aim point.</returns>
-        TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options);
-
-        /// <summary>
-        /// Attempts to fire the weapon.
-        /// </summary>
-        /// <returns>True if the weapon fired successfully.</returns>
-        bool Fire();
-
-        /// <summary>
-        /// Attempts to fire the weapon only if it is aimed at the specified position.
-        /// </summary>
-        /// <param name="worldPosition">The target position to check aim against.</param>
-        /// <returns>True if the weapon fired successfully.</returns>
-        bool TryFireAt(Vector3 worldPosition);
+        bool IsReady { get; }
     }
 
     /// <summary>

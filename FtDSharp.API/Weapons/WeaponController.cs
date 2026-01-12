@@ -11,7 +11,7 @@ namespace FtDSharp
     /// Controls one or more weapons/turrets with unified aiming and firing.
     /// Handles hierarchy correctly: turrets aim based on their closest weapons' calculated directions.
     /// </summary>
-    public partial class WeaponController
+    public partial class WeaponController : IWeaponControl
     {
         private float? _overrideProjectileSpeed;
         private List<WeaponItem> _weapons = null!;
@@ -19,7 +19,7 @@ namespace FtDSharp
         private ControlledItems _controlled = null!;
 
         private static readonly AimResult EmptyAimResult = new AimResult(false, false, false);
-        private static readonly TrackResult EmptyTrackResult = new TrackResult(EmptyAimResult, 0f, Vector3.zero, false);
+        private static readonly TrackResult EmptyTrackResult = new TrackResult(EmptyAimResult, 0f, Vector3.zero, false, false);
 
         #region Constructors
 
@@ -63,9 +63,9 @@ namespace FtDSharp
         public ControlledItems Controlled => _controlled;
 
         /// <summary>
-        /// Whether all weapons can currently fire.
+        /// Whether all weapons are known types that can fire.
         /// </summary>
-        public bool AllCanFire => _weapons.All(w => w.Facade.WeaponType != WeaponType.Unknown);
+        public bool AllKnownTypes => _weapons.All(w => w.Facade.WeaponType != WeaponType.Unknown);
 
         #endregion
 
@@ -121,26 +121,26 @@ namespace FtDSharp
         /// <summary>
         /// Tracks a moving target with lead calculation.
         /// </summary>
-        public AimResult Track(Vector3 targetPosition, Vector3 targetVelocity)
+        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
         {
-            return Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default).AimResult;
+            return Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default);
         }
 
         /// <summary>
         /// Tracks a moving target with lead calculation including acceleration.
         /// </summary>
-        public AimResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
+        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
         {
-            return Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default).AimResult;
+            return Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default);
         }
 
         /// <summary>
         /// Tracks a targetable object with lead calculation.
         /// </summary>
-        public AimResult Track(ITargetable targetable)
+        public TrackResult Track(ITargetable targetable)
         {
-            if (targetable == null) return EmptyAimResult;
-            return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default).AimResult;
+            if (targetable == null) return EmptyTrackResult;
+            return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default);
         }
 
         /// <summary>
@@ -206,7 +206,7 @@ namespace FtDSharp
         public bool TryFireAt(Vector3 worldPosition)
         {
             var result = AimAt(worldPosition);
-            return result.CanFire && Fire();
+            return result.IsOnTarget && Fire();
         }
 
         #endregion
@@ -237,8 +237,8 @@ namespace FtDSharp
         private static AimResult AggregateResults(AimResult a, AimResult b)
         {
             return new AimResult(
-                a.CanFire || b.CanFire,
-                a.CantFire || b.CantFire,
+                a.IsOnTarget || b.IsOnTarget,
+                a.IsBlocked || b.IsBlocked,
                 a.CanAim || b.CanAim
             );
         }
@@ -340,51 +340,54 @@ namespace FtDSharp
 
         private AimResult AimTurrets()
         {
-            bool canFire = false, cantFire = false, canAim = false;
+            bool isOnTarget = false, isBlocked = false, canAim = false;
             foreach (var turret in _turrets)
             {
                 var result = turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
-                canFire |= result.CanFire;
-                cantFire |= result.CantFire;
+                isOnTarget |= result.IsOnTarget;
+                isBlocked |= result.IsBlocked;
                 canAim |= result.CanAim;
             }
-            return new AimResult(canFire, cantFire, canAim);
+            return new AimResult(isOnTarget, isBlocked, canAim);
         }
 
         private AimResult AimWeapons()
         {
-            bool canFire = false, cantFire = false, canAim = false;
+            bool isOnTarget = false, isBlocked = false, canAim = false;
             foreach (var weapon in _weapons)
             {
                 var result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
-                canFire |= result.CanFire;
-                cantFire |= result.CantFire;
+                isOnTarget |= result.IsOnTarget;
+                isBlocked |= result.IsBlocked;
                 canAim |= result.CanAim;
             }
-            return new AimResult(canFire, cantFire, canAim);
+            return new AimResult(isOnTarget, isBlocked, canAim);
         }
 
         private TrackResult AggregateTrackResults(AimResult aimResult)
         {
             if (_weapons.Count == 0)
-                return new TrackResult(aimResult, 0f, Vector3.zero, false);
+                return new TrackResult(aimResult, 0f, Vector3.zero, false, false);
 
             float totalFlightTime = 0f;
             Vector3 lastAimPoint = Vector3.zero;
             bool anyTerrainBlocking = false;
+            bool allReady = true;
 
             foreach (var weapon in _weapons)
             {
                 totalFlightTime += weapon.FlightTime;
                 lastAimPoint = weapon.AimPoint;
                 anyTerrainBlocking |= weapon.IsTerrainBlocking;
+                allReady &= weapon.Facade.IsReady;
             }
 
             return new TrackResult(
                 aimResult,
                 totalFlightTime / _weapons.Count,
                 lastAimPoint,
-                anyTerrainBlocking
+                anyTerrainBlocking,
+                allReady
             );
         }
 

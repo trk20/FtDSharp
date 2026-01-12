@@ -50,12 +50,12 @@ public class WeaponControlDemo : IFtDSharp
             Log($"  About to Track...");
             // aim turret + all mounted weapons
             var result = turret.Track(target);
-            Log($"  Track returned: CanFire={result.CanFire}, CanAim={result.CanAim}");
+            Log($"  Track returned: IsOnTarget={result.IsOnTarget}, IsReady={result.IsReady}, CanFire={result.CanFire}, CanAim={result.CanAim}");
 
             var turretColor = result.CanFire ? Color.green : (result.CanAim ? Color.yellow : Color.red);
             Point(turret.WorldPosition, turretColor, size: 3f);
 
-            // fire all weapons on turret if ready
+            // fire all weapons on turret if ready (CanFire = IsOnTarget && IsReady)
             if (result.CanFire)
             {
                 turret.Fire();

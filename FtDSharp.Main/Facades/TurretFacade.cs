@@ -51,12 +51,12 @@ namespace FtDSharp.Facades
         }
 
         // Override Track methods to use the turret controller (coordinate all weapons)
-        public new AimResult Track(Vector3 targetPosition, Vector3 targetVelocity)
+        public new TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
         {
             return _turretController.Value.Track(targetPosition, targetVelocity);
         }
 
-        public new AimResult Track(ITargetable targetable)
+        public new TrackResult Track(ITargetable targetable)
         {
             return _turretController.Value.Track(targetable);
         }
@@ -64,6 +64,11 @@ namespace FtDSharp.Facades
         public new TrackResult Track(ITargetable targetable, TrackOptions options)
         {
             return _turretController.Value.Track(targetable, options);
+        }
+
+        public new TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
+        {
+            return _turretController.Value.Track(targetPosition, targetVelocity, targetAcceleration);
         }
 
         public new TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)

@@ -38,6 +38,7 @@ namespace FtDSharp
         public float TimeSinceStart => (float)_uptime.Elapsed.TotalSeconds;
         public long TicksSinceStart => _ticks;
         public IBlockToConstructBlockTypeStorage? BlockTypeStorage => _construct?.iBlockTypeStorage;
+        public AllConstruct? RawAllConstruct => _construct as AllConstruct;
 
         public IReadOnlyList<IMainframe> Mainframes => _mainframesCache.Value;
         public IReadOnlyList<IProjectileWarning> IncomingProjectiles => _warningsCache.Value;
@@ -125,7 +126,7 @@ namespace FtDSharp
                 {
                     if (weapon != null && weapon.IsAlive)
                     {
-                        yield return new WeaponFacade(weapon, allConstruct);
+                        yield return BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, allConstruct);
                     }
                 }
             }
@@ -145,7 +146,7 @@ namespace FtDSharp
                             {
                                 if (weapon != null && weapon.IsAlive)
                                 {
-                                    yield return new WeaponFacade(weapon, subAll);
+                                    yield return BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, subAll);
                                 }
                             }
                         }
@@ -179,7 +180,7 @@ namespace FtDSharp
                 {
                     if (weapon is Turrets turret && turret.IsAlive)
                     {
-                        turrets.Add(new TurretFacade(turret, allConstruct));
+                        turrets.Add(BlockFacadeFactory.GetOrCreateTurretFacade(turret, allConstruct));
                     }
                 }
             }
@@ -199,7 +200,7 @@ namespace FtDSharp
                             {
                                 if (weapon is Turrets turret && turret.IsAlive)
                                 {
-                                    turrets.Add(new TurretFacade(turret, subAll));
+                                    turrets.Add(BlockFacadeFactory.GetOrCreateTurretFacade(turret, subAll));
                                 }
                             }
                         }

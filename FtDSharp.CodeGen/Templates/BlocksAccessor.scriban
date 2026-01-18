@@ -54,10 +54,18 @@ namespace FtDSharp
         {
             var store = ScriptApi.Context?.BlockTypeStorage?.{{ block.store_property_name }};
             if (store?.Blocks == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ if block.is_weapon || block.is_turret ~}}
+            var allConstruct = ScriptApi.Context?.RawAllConstruct;
+            if (allConstruct == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ end ~}}
             var result = new List<{{ block.interface_name }}>(store.Blocks.Count);
             foreach (var block in store.Blocks)
             {
-                if (block != null) result.Add(new {{ block.class_name }}Facade(block));
+{{~ if block.is_weapon || block.is_turret ~}}
+                if (block != null) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block, allConstruct)));
+{{~ else ~}}
+                if (block != null) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block)));
+{{~ end ~}}
             }
             return result;
         });
@@ -66,10 +74,18 @@ namespace FtDSharp
         {
             var store = ScriptApi.Context?.BlockTypeStorage?.{{ block.store_property_name }};
             if (store?.Blocks == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ if block.is_weapon || block.is_turret ~}}
+            var allConstruct = ScriptApi.Context?.RawAllConstruct;
+            if (allConstruct == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ end ~}}
             var result = new List<{{ block.interface_name }}>();
             foreach (var block in store.Blocks)
             {
-                if (block is {{ block.game_type_full_name }} concrete) result.Add(new {{ block.class_name }}Facade(concrete));
+{{~ if block.is_weapon || block.is_turret ~}}
+                if (block is {{ block.game_type_full_name }} concrete) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete, allConstruct)));
+{{~ else ~}}
+                if (block is {{ block.game_type_full_name }} concrete) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete)));
+{{~ end ~}}
             }
             return result;
         });

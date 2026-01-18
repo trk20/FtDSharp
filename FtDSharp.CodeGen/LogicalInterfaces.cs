@@ -86,7 +86,7 @@ public static class LogicalInterfaces
             Description = "Weapon base properties.",
             PropertyNames =
             [
-                "SpeedReader",
+                // Note: SpeedReader (ProjectileSpeed) is omitted because IWeapon already provides it
                 "HasFiredReader",
                 nameof(WeaponData.RequiredAccuracy),
                 nameof(WeaponData.FiringDelay),

@@ -69,11 +69,19 @@ public class TemplateRenderer
     {
         var model = new ScriptObject();
 
+        // Determine if this is a weapon block
+        bool isWeapon = block.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock");
+
         // Build inheritance list
         var baseInterfaces = new List<string>();
         if (block.ParentInterfaceName != null)
         {
             baseInterfaces.Add(block.ParentInterfaceName);
+        }
+        else if (isWeapon)
+        {
+            // Weapon blocks inherit from IWeapon (which includes IBlock and IWeaponControl)
+            baseInterfaces.Add("IWeapon");
         }
         else
         {
@@ -100,6 +108,10 @@ public class TemplateRenderer
     {
         var model = new ScriptObject();
 
+        // Determine if this is a weapon or turret block
+        bool isWeapon = block.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock");
+        bool isTurret = typeof(Turrets).IsAssignableFrom(block.GameType);
+
         // All interfaces (explicit listing)
         var allInterfaces = new List<string> { block.InterfaceName };
         allInterfaces.AddRange(block.ImplementedLogicalInterfaces);
@@ -107,12 +119,15 @@ public class TemplateRenderer
         // Filter out properties already provided by BlockFacadeBase or base IBlock interface
         var facadeProperties = block.AllProperties
             .Where(p => !Passes.InheritanceFilterPass.BaseIBlockProperties.Contains(p.Name))
+            .Where(p => !(isWeapon || isTurret) || !Passes.InheritanceFilterPass.WeaponFacadeProperties.Contains(p.Name))
             .ToList();
 
         model["class_name"] = block.ClassName;
         model["interface_name"] = block.InterfaceName;
         model["game_type_full_name"] = block.GameType.FullName;
         model["all_interfaces"] = allInterfaces;
+        model["is_weapon"] = isWeapon;
+        model["is_turret"] = isTurret;
         model["properties"] = facadeProperties.Select(p => new ScriptObject
         {
             ["name"] = p.Name,
@@ -179,10 +194,17 @@ public class TemplateRenderer
     private ScriptObject CreateBlockFactoryModel(List<BlockDefinition> blocks)
     {
         var model = new ScriptObject();
-        model["blocks"] = blocks.Select(b => new ScriptObject
+        model["blocks"] = blocks.Select(b =>
         {
-            ["class_name"] = b.ClassName,
-            ["game_type_full_name"] = b.GameType.FullName
+            bool isWeapon = b.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock");
+            bool isTurret = typeof(Turrets).IsAssignableFrom(b.GameType);
+            return new ScriptObject
+            {
+                ["class_name"] = b.ClassName,
+                ["game_type_full_name"] = b.GameType.FullName,
+                ["is_weapon"] = isWeapon,
+                ["is_turret"] = isTurret
+            };
         }).ToList();
 
         return model;
@@ -193,12 +215,14 @@ public class TemplateRenderer
         var model = new ScriptObject();
         model["blocks"] = blocks.Select(b =>
         {
-            // Pluralize the name
-            var pluralName = b.ClassName.EndsWith("s")
-                ? b.ClassName + "es"
-                : b.ClassName + "s";
+            // Pluralize the name using proper English rules
+            var pluralName = Pluralizer.Pluralize(b.ClassName);
 
             var fieldName = $"_{char.ToLower(pluralName[0])}{pluralName.Substring(1)}";
+
+            // Determine if this is a weapon or turret block
+            bool isWeapon = b.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock");
+            bool isTurret = typeof(Turrets).IsAssignableFrom(b.GameType);
 
             return new ScriptObject
             {
@@ -209,7 +233,9 @@ public class TemplateRenderer
                 ["game_type_full_name"] = b.GameType.FullName,
                 ["has_store"] = b.StoreBinding != null,
                 ["store_property_name"] = b.StoreBinding?.PropertyName,
-                ["is_interface_store"] = b.StoreBinding?.IsInterfaceStore ?? false
+                ["is_interface_store"] = b.StoreBinding?.IsInterfaceStore ?? false,
+                ["is_weapon"] = isWeapon,
+                ["is_turret"] = isTurret
             };
         }).ToList();
 

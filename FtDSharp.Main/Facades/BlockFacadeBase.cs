@@ -112,5 +112,20 @@ namespace FtDSharp.Facades
         public float CurrentHealth => _baseBlock.CurrentHealth;
 
         public float MaximumHealth => _baseBlock.MaximumHealth;
+
+        public int SubobjectDepth
+        {
+            get
+            {
+                int depth = 0;
+                var current = Parent;
+                while (current != null)
+                {
+                    depth++;
+                    current = current.Parent;
+                }
+                return depth;
+            }
+        }
     }
 }

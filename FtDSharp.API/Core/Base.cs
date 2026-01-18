@@ -61,6 +61,11 @@ namespace FtDSharp
         public float CurrentHealth { get; }
         /// <summary>Maximum health of the block.</summary>
         public float MaximumHealth { get; }
+        /// <summary>
+        /// The depth of this block in the subobject hierarchy.
+        /// 0 = on root construct, 1 = on turret/spinblock, 2 = on turret-on-turret, etc.
+        /// </summary>
+        public int SubobjectDepth { get; }
     }
 
     public interface IFriendlyConstruct : IConstruct

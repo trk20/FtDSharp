@@ -19,6 +19,10 @@ namespace FtDSharp.Facades
         private WeaponType? _cachedWeaponType;
         private readonly AimingModule _aimingModule;
 
+        // State from last aim/track operation (null if none this frame)
+        // Reset per-frame via facade cache (new facade instance each frame)
+        private TrackResult? _lastResult;
+
         public WeaponFacade(ConstructableWeapon weapon, AllConstruct allConstruct) : base(weapon)
         {
             _weapon = weapon;
@@ -64,14 +68,42 @@ namespace FtDSharp.Facades
         /// </summary>
         public bool IsReady => CheckIsReady();
 
+        // --- State properties from last Track/AimAt call ---
+        public bool OnTarget => _lastResult?.IsOnTarget ?? false;
+        public bool CanAim => _lastResult?.CanAim ?? false;
+        public bool IsBlocked => _lastResult?.AimResult.IsBlocked ?? false;
+        public bool CanFire => _lastResult?.CanFire ?? false;
+        public float FlightTime => _lastResult?.FlightTime ?? 0f;
+        public Vector3 AimPoint => _lastResult?.AimPoint ?? Vector3.zero;
+        public bool BlockedByTerrain => _lastResult?.IsTerrainBlocking ?? false;
+
+        /// <summary>
+        /// Stores the tracking result state. Called internally after Track operations.
+        /// </summary>
+        internal void SetTrackState(TrackResult result)
+        {
+            _lastResult = result;
+        }
+
+        /// <summary>
+        /// Stores the aim result state (creates TrackResult with aim data only).
+        /// </summary>
+        internal void SetAimState(AimResult result)
+        {
+            _lastResult = new TrackResult(result, 0f, Vector3.zero, false, IsReady);
+        }
+
         public AimResult AimAt(Vector3 worldPosition)
         {
-            return AimAtInternal(worldPosition);
+            var result = AimAtInternal(worldPosition);
+            SetAimState(result);
+            return result;
         }
 
         /// <summary>
         /// Internal aim method that directly aims the weapon using a position.
         /// Calculates direction from this weapon's position.
+        /// Does NOT update state properties - caller must do that.
         /// </summary>
         internal AimResult AimAtInternal(Vector3 worldPosition)
         {
@@ -144,7 +176,7 @@ namespace FtDSharp.Facades
 
             try
             {
-                bool lowArc = options.ArcPreference == ArcPreference.Low;
+                bool lowArc = options.ArcPreference == ArcPreference.PreferLow || options.ArcPreference == ArcPreference.OnlyLow;
                 aimDirection = _aimingModule.CalculateAimDirection(
                     Planet.i.World.Physics,
                     recalculateFlightTimes: true,
@@ -161,7 +193,9 @@ namespace FtDSharp.Facades
             }
 
             var aimResult = AimAtDirectionInternal(aimDirection);
-            return new TrackResult(aimResult, flightTime, aimPoint, isTerrainBlocking, IsReady);
+            var trackResult = new TrackResult(aimResult, flightTime, aimPoint, isTerrainBlocking, IsReady);
+            SetTrackState(trackResult);
+            return trackResult;
         }
 
         public TrackResult Track(ITargetable targetable)
@@ -204,7 +238,7 @@ namespace FtDSharp.Facades
         {
             if (_weapon is Turrets turret)
             {
-                return turret.FiringArc.LastGoodLocalDirection;
+                return turret.GameWorldRotation * turret.FiringArc.LastGoodLocalDirection;
             }
             if (_weapon is CannonFiringPiece cannon)
             {
@@ -224,8 +258,7 @@ namespace FtDSharp.Facades
             }
             if (_weapon is FlamerMain flamer)
             {
-                // verify this works
-                return flamer.GetRotationForFofm(true, false).Rotation * Vector3.forward;
+                return flamer.GameWorldRotation * flamer.FiringArc.LastGoodLocalDirection; // I can't find a better way for flamers
             }
             return _weapon.GameWorldRotation * Vector3.forward;
         }

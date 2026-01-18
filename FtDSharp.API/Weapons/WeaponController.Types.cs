@@ -105,7 +105,7 @@ namespace FtDSharp
                 TargetAcceleration = targetAcceleration;
                 ConstructVelocity = constructVelocity;
                 Options = options;
-                LowArc = options.ArcPreference == ArcPreference.Low;
+                LowArc = options.ArcPreference == ArcPreference.PreferLow || options.ArcPreference == ArcPreference.OnlyLow;
             }
         }
     }

@@ -10,9 +10,9 @@ public class SubObjectHierarchy : IFtDSharp
     public void Update(float deltaTime)
     {
         ClearLogs();
-        foreach (var sub in Blocks.Spinnerses) // yeah I know
+        foreach (var sub in Blocks.SpinBlocks)
         {
-            Log($"Spinner {sub.UniqueId} has parent {sub.Parent?.UniqueId ?? -1}");
+            Log($"SpinBlock {sub.UniqueId} has parent {sub.Parent?.UniqueId ?? -1}");
         }
     }
 }

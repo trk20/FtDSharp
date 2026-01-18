@@ -82,9 +82,42 @@ namespace FtDSharp.Facades
             return _turretController.Value.Fire();
         }
 
+        // --- Aggregate state properties from mounted weapons ---
+
+        /// <summary>
+        /// True if any mounted weapon is on target (from last Track/AimAt this frame).
+        /// </summary>
+        public bool AnyOnTarget => Weapons.Count > 0 && Weapons.Any(w => w.OnTarget);
+
+        /// <summary>
+        /// True if all mounted weapons are on target (from last Track/AimAt this frame).
+        /// </summary>
+        public bool AllOnTarget => Weapons.Count > 0 && Weapons.All(w => w.OnTarget);
+
+        /// <summary>
+        /// True if any mounted weapon is ready to fire.
+        /// </summary>
+        public bool AnyReady => Weapons.Count > 0 && Weapons.Any(w => w.IsReady);
+
+        /// <summary>
+        /// True if all mounted weapons are ready to fire.
+        /// </summary>
+        public bool AllReady => Weapons.Count > 0 && Weapons.All(w => w.IsReady);
+
+        /// <summary>
+        /// True if any mounted weapon can fire (on target AND ready).
+        /// </summary>
+        public bool AnyCanFire => Weapons.Count > 0 && Weapons.Any(w => w.CanFire);
+
+        /// <summary>
+        /// True if all mounted weapons can fire (on target AND ready).
+        /// </summary>
+        public bool AllCanFire => Weapons.Count > 0 && Weapons.All(w => w.CanFire);
+
         /// <summary>
         /// Discovers all weapons mounted on this turret and nested subobjects.
         /// Uses a visited set to prevent duplicates.
+        /// Uses the facade cache to ensure consistent instances.
         /// </summary>
         private IReadOnlyList<IWeapon> DiscoverWeapons()
         {
@@ -100,14 +133,7 @@ namespace FtDSharp.Facades
                         continue;
                     visited.Add(weapon);
 
-                    if (weapon is Turrets nestedTurret)
-                    {
-                        weapons.Add(new TurretFacade(nestedTurret, AllConstruct));
-                    }
-                    else
-                    {
-                        weapons.Add(new WeaponFacade(weapon, AllConstruct));
-                    }
+                    weapons.Add(BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, AllConstruct));
                 }
             }
 
@@ -130,14 +156,7 @@ namespace FtDSharp.Facades
                                 visited.Add(weapon);
 
                                 var nestedAllConstruct = nestedSub as AllConstruct ?? AllConstruct;
-                                if (weapon is Turrets nestedTurret)
-                                {
-                                    weapons.Add(new TurretFacade(nestedTurret, nestedAllConstruct));
-                                }
-                                else
-                                {
-                                    weapons.Add(new WeaponFacade(weapon, nestedAllConstruct));
-                                }
+                                weapons.Add(BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, nestedAllConstruct));
                             }
                         }
                     }

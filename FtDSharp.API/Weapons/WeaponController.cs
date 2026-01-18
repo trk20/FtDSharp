@@ -110,7 +110,7 @@ namespace FtDSharp
             }
 
             var result = AimTurrets();
-            result = AggregateResults(result, AimWeapons());
+            result = AggregateResults(result, AimWeaponsForAimAt(worldPosition));
             return result;
         }
 
@@ -344,6 +344,23 @@ namespace FtDSharp
             foreach (var turret in _turrets)
             {
                 var result = turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
+
+                // Propagate track state to turret (uses aggregated data from closest weapons)
+                float flightTime = 0f;
+                Vector3 aimPoint = Vector3.zero;
+                bool isTerrainBlocking = false;
+                if (turret.HasWeapons)
+                {
+                    foreach (var weapon in turret.ClosestWeapons!)
+                    {
+                        flightTime += weapon.FlightTime;
+                        aimPoint = weapon.AimPoint; // Use last weapon's aim point
+                        isTerrainBlocking |= weapon.IsTerrainBlocking;
+                    }
+                    flightTime /= turret.ClosestWeapons.Count;
+                }
+                turret.Facade.SetTrackState(new TrackResult(result, flightTime, aimPoint, isTerrainBlocking, turret.Facade.IsReady));
+
                 isOnTarget |= result.IsOnTarget;
                 isBlocked |= result.IsBlocked;
                 canAim |= result.CanAim;
@@ -360,6 +377,29 @@ namespace FtDSharp
                 isOnTarget |= result.IsOnTarget;
                 isBlocked |= result.IsBlocked;
                 canAim |= result.CanAim;
+
+                // Propagate state to the weapon facade
+                var trackResult = new TrackResult(result, weapon.FlightTime, weapon.AimPoint, weapon.IsTerrainBlocking, weapon.Facade.IsReady);
+                weapon.Facade.SetTrackState(trackResult);
+            }
+            return new AimResult(isOnTarget, isBlocked, canAim);
+        }
+
+        /// <summary>
+        /// Aims weapons and propagates AimResult state (for AimAt calls without lead calculation).
+        /// </summary>
+        private AimResult AimWeaponsForAimAt(Vector3 worldPosition)
+        {
+            bool isOnTarget = false, isBlocked = false, canAim = false;
+            foreach (var weapon in _weapons)
+            {
+                var result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
+                isOnTarget |= result.IsOnTarget;
+                isBlocked |= result.IsBlocked;
+                canAim |= result.CanAim;
+
+                // Propagate aim state (no flight time/aimpoint data)
+                weapon.Facade.SetAimState(result);
             }
             return new AimResult(isOnTarget, isBlocked, canAim);
         }

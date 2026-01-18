@@ -102,7 +102,7 @@ public class GeneratorPipeline
             .Select(rb => new BlockDefinition
             {
                 GameType = rb.GameType,
-                ClassName = rb.GameType.Name
+                ClassName = Overrides.ApplyClassRename(rb.GameType.Name)
             })
         ];
     }

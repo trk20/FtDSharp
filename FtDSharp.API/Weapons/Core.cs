@@ -53,7 +53,7 @@ namespace FtDSharp
         /// <summary>
         /// Gets all missile launchers.
         /// </summary>
-        public static IReadOnlyList<IWeapon> MissileLaunchers => All.Where(w => w.WeaponType == WeaponType.Missile).ToList();
+        public static IReadOnlyList<IWeapon> MissileControllers => All.Where(w => w.WeaponType == WeaponType.Missile).ToList();
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ namespace FtDSharp
             ProjectileSpeed = null,
             TargetAcceleration = null,
             UseGravity = true,
-            ArcPreference = ArcPreference.Low
+            ArcPreference = ArcPreference.PreferLow
         };
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace FtDSharp
             ProjectileSpeed = null,
             TargetAcceleration = null,
             UseGravity = false,
-            ArcPreference = ArcPreference.Low
+            ArcPreference = ArcPreference.PreferLow
         };
     }
 
@@ -136,10 +136,14 @@ namespace FtDSharp
     /// </summary>
     public enum ArcPreference
     {
-        /// <summary>Prefer lower arc (faster, flatter trajectory).</summary>
-        Low,
-        /// <summary>Prefer higher arc (slower, more curved trajectory).</summary>
-        High
+        /// <summary>Prefer lower arc (faster, flatter trajectory), but accept higher if needed.</summary>
+        PreferLow,
+        /// <summary>Prefer higher arc (slower, more curved trajectory), but accept lower if needed.</summary>
+        PreferHigh,
+        /// <summary>Only use low arc solutions. CanAim = false if no low arc solution exists.</summary>
+        OnlyLow,
+        /// <summary>Only use high arc solutions. CanAim = false if no high arc solution exists.</summary>
+        OnlyHigh
     }
 
     /// <summary>
@@ -290,9 +294,52 @@ namespace FtDSharp
 
         /// <summary>
         /// Whether the weapon is ready to fire (has ammo, is reloaded, has energy, not cooling down, etc.).
-        /// Note: Future improvement - expose the specific reason why a weapon can't fire.
         /// </summary>
-        bool IsReady { get; }
+        bool IsReady { get; } // Note: Future improvement - expose the specific reason why a weapon can't fire.
+
+        // --- State properties from last Track/AimAt call this frame ---
+
+        /// <summary>
+        /// Whether the weapon is on target (from last Track/AimAt call this frame).
+        /// Returns false if no aim/track has been performed this frame.
+        /// </summary>
+        bool OnTarget { get; }
+
+        /// <summary>
+        /// Whether the weapon can physically aim at the target (from last Track/AimAt call this frame).
+        /// Returns false if no aim/track has been performed this frame.
+        /// </summary>
+        bool CanAim { get; }
+
+        /// <summary>
+        /// Whether the shot would be blocked (from last Track/AimAt call this frame).
+        /// Returns false if no aim/track has been performed this frame.
+        /// </summary>
+        bool IsBlocked { get; }
+
+        /// <summary>
+        /// Whether the weapon can fire (OnTarget AND IsReady) (from last Track/AimAt call this frame).
+        /// Returns false if no aim/track has been performed this frame.
+        /// </summary>
+        bool CanFire { get; }
+
+        /// <summary>
+        /// Flight time to target in seconds (from last Track call this frame).
+        /// Returns 0 if no track has been performed this frame.
+        /// </summary>
+        float FlightTime { get; }
+
+        /// <summary>
+        /// Calculated aim point position (from last Track call this frame).
+        /// Returns Vector3.zero if no track has been performed this frame.
+        /// </summary>
+        Vector3 AimPoint { get; }
+
+        /// <summary>
+        /// Whether terrain would block the shot (from last Track call this frame).
+        /// Returns false if no track has been performed this frame.
+        /// </summary>
+        bool BlockedByTerrain { get; }
     }
 
     /// <summary>
@@ -315,5 +362,37 @@ namespace FtDSharp
         /// Current elevation (vertical) angle in degrees.
         /// </summary>
         float Elevation { get; }
+
+        // --- Aggregate state properties from mounted weapons ---
+
+        /// <summary>
+        /// True if any mounted weapon is on target (from last Track/AimAt this frame).
+        /// </summary>
+        bool AnyOnTarget { get; }
+
+        /// <summary>
+        /// True if all mounted weapons are on target (from last Track/AimAt this frame).
+        /// </summary>
+        bool AllOnTarget { get; }
+
+        /// <summary>
+        /// True if any mounted weapon is ready to fire.
+        /// </summary>
+        bool AnyReady { get; }
+
+        /// <summary>
+        /// True if all mounted weapons are ready to fire.
+        /// </summary>
+        bool AllReady { get; }
+
+        /// <summary>
+        /// True if any mounted weapon can fire (on target AND ready).
+        /// </summary>
+        bool AnyCanFire { get; }
+
+        /// <summary>
+        /// True if all mounted weapons can fire (on target AND ready).
+        /// </summary>
+        bool AllCanFire { get; }
     }
 }

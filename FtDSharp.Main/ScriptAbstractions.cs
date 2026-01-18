@@ -17,6 +17,8 @@ namespace FtDSharp
         long TicksSinceStart { get; }
         /// <summary>Raw access to the block type storage.</summary>
         IBlockToConstructBlockTypeStorage? BlockTypeStorage { get; }
+        /// <summary>Raw access to the AllConstruct for internal use (weapon facades, etc.).</summary>
+        AllConstruct? RawAllConstruct { get; }
         /// <summary>All AI Mainframes on the construct.</summary>
         IReadOnlyList<IMainframe> Mainframes { get; }
         /// <summary>All valid incoming projectile warnings.</summary>

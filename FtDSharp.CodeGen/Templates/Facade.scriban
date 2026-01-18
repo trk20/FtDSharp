@@ -6,6 +6,21 @@ using UnityEngine;
 
 namespace FtDSharp.Facades
 {
+{{~ if is_turret ~}}
+    internal class {{ class_name }}Facade : TurretFacade, {{ all_interfaces | array.join ", " }}
+    {
+        public {{ class_name }}Facade({{ game_type_full_name }} block, AllConstruct allConstruct) 
+            : base((Turrets)(object)block, allConstruct)
+        {
+        }
+{{~ else if is_weapon ~}}
+    internal class {{ class_name }}Facade : WeaponFacade, {{ all_interfaces | array.join ", " }}
+    {
+        public {{ class_name }}Facade({{ game_type_full_name }} block, AllConstruct allConstruct) 
+            : base(block, allConstruct)
+        {
+        }
+{{~ else ~}}
     internal class {{ class_name }}Facade : BlockFacadeBase, {{ all_interfaces | array.join ", " }}
     {
         private readonly {{ game_type_full_name }} _block;
@@ -14,8 +29,22 @@ namespace FtDSharp.Facades
         {
             _block = block;
         }
+{{~ end ~}}
 {{~ for prop in properties ~}}
 
+{{~ if is_weapon || is_turret ~}}
+{{~ # For weapon/turret facades, access via Weapon property from base class ~}}
+{{~ if prop.has_setter ~}}
+        public {{ prop.type_name }} {{ prop.name }}
+        {
+            get => (({{ game_type_full_name }})Weapon).{{ prop.accessor_path }};
+            set => (({{ game_type_full_name }})Weapon).{{ prop.accessor_path }} = value;
+        }
+{{~ else ~}}
+        public {{ prop.type_name }} {{ prop.name }} => (({{ game_type_full_name }})Weapon).{{ prop.accessor_path }};
+{{~ end ~}}
+{{~ else ~}}
+{{~ # For regular blocks, access via _block field ~}}
 {{~ if prop.has_setter ~}}
         public {{ prop.type_name }} {{ prop.name }}
         {
@@ -24,6 +53,7 @@ namespace FtDSharp.Facades
         }
 {{~ else ~}}
         public {{ prop.type_name }} {{ prop.name }} => _block.{{ prop.accessor_path }};
+{{~ end ~}}
 {{~ end ~}}
 {{~ end ~}}
     }

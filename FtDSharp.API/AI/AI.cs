@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,9 +12,10 @@ namespace FtDSharp
         /// <summary>
         /// All AI Mainframes on the construct, sorted by priority (lower = higher priority).
         /// </summary>
-        public static IReadOnlyList<IMainframe> Mainframes => ScriptApi.Context?.Mainframes ?? System.Array.Empty<IMainframe>();
+        public static IReadOnlyList<IMainframe> Mainframes =>
+            Game.MainConstruct?.Mainframes ?? Array.Empty<IMainframe>();
 
-        /// <summary>
+        /// <summary> 
         /// The highest priority AI Mainframe on the construct.
         /// </summary>
         public static IMainframe HighestPriorityMainframe => Mainframes.OrderBy(m => m.Block.Priority).First();

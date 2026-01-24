@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FtDSharp.Facades;
 using UnityEngine;
 
 namespace FtDSharp
@@ -50,8 +51,7 @@ namespace FtDSharp
     /// </summary>
     public static class Warnings
     {
-        private static readonly FrameCache<IReadOnlyList<IProjectileWarning>> _all = new(
-            () => ScriptApi.Context?.IncomingProjectiles ?? Array.Empty<IProjectileWarning>());
+        private static readonly FrameCache<IReadOnlyList<IProjectileWarning>> _all = new(GetWarnings);
 
         private static readonly FrameCache<IReadOnlyList<IProjectileWarning>> _missiles = new(
             () => IncomingProjectiles.Where(w => w.Type == ProjectileType.Missile).ToList());
@@ -80,6 +80,19 @@ namespace FtDSharp
         public static IEnumerable<IProjectileWarning> GetByType(ProjectileType type)
         {
             return IncomingProjectiles.Where(w => w.Type == type);
+        }
+
+        private static IReadOnlyList<IProjectileWarning> GetWarnings()
+        {
+            // MWM is on MainConstruct, cast from AllConstruct
+            var construct = ScriptApi.Context?.RawAllConstruct as MainConstruct;
+            if (construct?.MWM?.Warnings == null) return Array.Empty<IProjectileWarning>();
+
+            return construct.MWM.Warnings
+                .Where(warning => warning?.IsValid ?? false)
+                .Select(warning => new ProjectileWarningFacade(warning))
+                .Cast<IProjectileWarning>()
+                .ToList();
         }
     }
 }

@@ -17,24 +17,8 @@ namespace FtDSharp
         long TicksSinceStart { get; }
         /// <summary>Raw access to the block type storage.</summary>
         IBlockToConstructBlockTypeStorage? BlockTypeStorage { get; }
-        /// <summary>Raw access to the AllConstruct for internal use (weapon facades, etc.).</summary>
+        /// <summary>Raw access to the AllConstruct for internal use (Friendly/Warnings static classes).</summary>
         AllConstruct? RawAllConstruct { get; }
-        /// <summary>All AI Mainframes on the construct.</summary>
-        IReadOnlyList<IMainframe> Mainframes { get; }
-        /// <summary>All valid incoming projectile warnings.</summary>
-        IReadOnlyList<IProjectileWarning> IncomingProjectiles { get; }
-        /// <summary>All friendly constructs including the current construct.</summary>
-        IReadOnlyList<IFriendlyConstruct> Friendlies { get; }
-        /// <summary>All friendly constructs excluding the current construct.</summary>
-        IReadOnlyList<IFriendlyConstruct> FriendliesExcludingSelf { get; }
-        /// <summary>All fleets containing friendly constructs.</summary>
-        IReadOnlyList<IFleet> Fleets { get; }
-        /// <summary>The fleet the current construct belongs to.</summary>
-        IFleet MyFleet { get; }
-        /// <summary>All weapons on the construct (excluding turrets).</summary>
-        IReadOnlyList<IWeapon> Weapons { get; }
-        /// <summary>All turrets on the construct.</summary>
-        IReadOnlyList<ITurret> Turrets { get; }
     }
 
     public interface ILogApi

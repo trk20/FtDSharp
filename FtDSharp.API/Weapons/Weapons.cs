@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System;
 
 namespace FtDSharp
 {
@@ -13,12 +14,14 @@ namespace FtDSharp
         /// Gets all weapons on the current construct (excluding turrets).
         /// Includes weapons on subconstructs (turrets, spinblocks, etc).
         /// </summary>
-        public static IReadOnlyList<IWeapon> All => ScriptApi.Context?.Weapons ?? System.Array.Empty<IWeapon>();
+        public static IReadOnlyList<IWeapon> All =>
+            Game.MainConstruct?.Weapons ?? Array.Empty<IWeapon>();
 
         /// <summary>
         /// Gets all turrets on the current construct.
         /// </summary>
-        public static IReadOnlyList<ITurret> Turrets => ScriptApi.Context?.Turrets ?? System.Array.Empty<ITurret>();
+        public static IReadOnlyList<ITurret> Turrets =>
+            Game.MainConstruct?.Turrets ?? Array.Empty<ITurret>();
 
         /// <summary>
         /// Gets all APS (Advanced Projectile System) weapons.

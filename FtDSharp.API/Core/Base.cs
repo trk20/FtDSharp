@@ -93,6 +93,12 @@ namespace FtDSharp
         public List<IMissile> Missiles { get; }
         /// <summary> Axis-based propulsion control. </summary>
         public IPropulsion Propulsion { get; }
+        /// <summary> All AI mainframes on this construct, sorted by priority (lower = higher). </summary>
+        IReadOnlyList<IMainframe> Mainframes { get; }
+        /// <summary> All weapons on this construct (excluding turrets). </summary>
+        IReadOnlyList<IWeapon> Weapons { get; }
+        /// <summary> All turrets on this construct. </summary>
+        IReadOnlyList<ITurret> Turrets { get; }
     }
 
 }

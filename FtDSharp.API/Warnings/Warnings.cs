@@ -2,50 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FtDSharp.Facades;
-using UnityEngine;
 
 namespace FtDSharp
 {
-    /// <summary>
-    /// Type of incoming projectile.
-    /// </summary>
-    public enum ProjectileType
-    {
-        /// <summary> Unknown projectile type. </summary>
-        Unknown,
-        /// <summary> Includes both regular missiles and harpoons. Use HasHarpoon to distinguish. </summary>
-        Missile,
-        /// <summary> APS (Advanced Projectile System) shells. </summary>
-        Shell,
-        /// <summary> CRAM cannon shells. </summary>
-        Cram
-    }
-
-    /// <summary>
-    /// Represents a detected incoming projectile warning from munition warners, radar, etc.
-    /// </summary>
-    public interface IProjectileWarning : ITargetable
-    {
-        /// <summary> Type of the incoming projectile. </summary>
-        ProjectileType Type { get; }
-        /// <summary> Diameter of the projectile in meters. </summary>
-        float Diameter { get; }
-        /// <summary> Current health of the projectile. </summary>
-        // float Health { get; } // TBD if unfair to expose
-        /// <summary> Length of the projectile in meters. </summary>
-        // float Length { get; } // TBD if unfair to expose
-        /// <summary> Time since the projectile was fired in seconds. </summary>
-        float TimeSinceFiring { get; }
-        /// <summary> Time since this projectile was last spotted in seconds. </summary>
-        float TimeSinceLastSpotted { get; }
-        /// <summary> Whether this is a fake projectile (created via projectile avoidance GUI). </summary>
-        bool IsFake { get; }
-        /// <summary> Number of shots that have been fired at this projectile. </summary>
-        int ShotsFiredAt { get; }
-        /// <summary> Number of CIWS turrets currently aiming at this projectile. </summary>
-        int CiwsAimingAt { get; }
-    }
-
     /// <summary>
     /// Static accessor for projectile warning information.
     /// </summary>
@@ -84,7 +43,6 @@ namespace FtDSharp
 
         private static IReadOnlyList<IProjectileWarning> GetWarnings()
         {
-            // MWM is on MainConstruct, cast from AllConstruct
             var construct = ScriptApi.Context?.RawAllConstruct as MainConstruct;
             if (construct?.MWM?.Warnings == null) return Array.Empty<IProjectileWarning>();
 

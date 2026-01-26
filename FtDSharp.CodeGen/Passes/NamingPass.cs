@@ -7,7 +7,7 @@ namespace FtDSharp.CodeGen.Passes;
 public partial class NamingPass : IBlockPass
 {
     private static readonly Regex PrefixPattern = GetPrefixRegex();
-    private readonly List<string> _allCollisions = new();
+    private readonly List<string> _allCollisions = [];
 
     public IReadOnlyList<string> AllCollisions => _allCollisions;
 

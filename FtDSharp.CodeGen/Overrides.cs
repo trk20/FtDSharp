@@ -165,29 +165,29 @@ public static class Overrides
         ["P8"] = ("BreadboardControllerID", "parameters"),
     };
 
-    public static readonly HashSet<string> SkipProperties = new()
-    {
+    public static readonly HashSet<string> SkipProperties =
+    [
         "obsolete",
-    };
+    ];
 
-    public static readonly HashSet<string> SkipPatternProperties = new()
-    {
+    public static readonly HashSet<string> SkipPatternProperties =
+    [
         "obsolete",
         "Endangered",
         "Cache",
         "_ns",
         "_ps",
-    };
+    ];
 
-    public static readonly HashSet<string> SkipDataPackages = new()
-    {
+    public static readonly HashSet<string> SkipDataPackages =
+    [
         "OldData",
         "PriorityData",
         "StorageData",
-    };
+    ];
 
-    public static readonly HashSet<Type> SkipClasses = new()
-    {
+    public static readonly HashSet<Type> SkipClasses =
+    [
         typeof(Block),
         typeof(HelicopterSpinner),
         typeof(HelicopterBlade),
@@ -200,7 +200,7 @@ public static class Overrides
         typeof(BoomBlock),
         typeof(AntiMissileCannonController),
         typeof(AiCardDepreciated),
-    };
+    ];
 
     public static string ApplyClassRename(string className) =>
         ClassRenames.TryGetValue(className, out var renamed) ? renamed : className;

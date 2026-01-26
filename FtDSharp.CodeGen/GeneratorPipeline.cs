@@ -84,6 +84,63 @@ public class GeneratorPipeline
 
         Log.Information("Generated {BlockCount} interfaces/facades with {PropCount} total properties",
             blocksToGenerate.Count, totalProperties);
+
+        // ============ Missile Parts Generation ============
+        GenerateMissileParts(renderer, apiOutputPath, facadeOutputPath);
+    }
+
+    private void GenerateMissileParts(TemplateRenderer renderer, string apiOutputPath, string facadeOutputPath)
+    {
+        Log.Debug("Generating missile part interfaces and facades...");
+
+        var partsOutputPath = Path.Combine(apiOutputPath, "MissileParts");
+        var partFacadesOutputPath = Path.Combine(facadeOutputPath, "MissileParts");
+        Directory.CreateDirectory(partsOutputPath);
+        Directory.CreateDirectory(partFacadesOutputPath);
+
+        // Clean up old generated files
+        foreach (var file in Directory.GetFiles(partsOutputPath, "*.g.cs"))
+            File.Delete(file);
+        foreach (var file in Directory.GetFiles(partFacadesOutputPath, "*.g.cs"))
+            File.Delete(file);
+
+        // Filter to parts with definitions
+        var partsToGenerate = MissilePartConfig.Definitions
+            .Where(d => !MissilePartConfig.SkipComponentNames.Contains(d.GameType.Name))
+            .ToList();
+
+        // Generate enums
+        if (MissilePartConfig.Enums.Any())
+        {
+            var enumsCode = renderer.RenderMissilePartEnums([.. MissilePartConfig.Enums]);
+            File.WriteAllText(Path.Combine(partsOutputPath, "MissilePartEnums.g.cs"), enumsCode);
+            Log.Debug("Generated {Count} missile part enums", MissilePartConfig.Enums.Count);
+        }
+
+        // Generate interfaces and facades for each part
+        int partCount = 0;
+        int paramCount = 0;
+        foreach (var part in partsToGenerate)
+        {
+            partCount++;
+            paramCount += part.Parameters.Count;
+
+            var interfaceCode = renderer.RenderMissilePartInterface(part);
+            File.WriteAllText(Path.Combine(partsOutputPath, $"{part.InterfaceName}.g.cs"), interfaceCode);
+
+            var facadeCode = renderer.RenderMissilePartFacade(part);
+            var className = part.InterfaceName.StartsWith('I')
+                ? part.InterfaceName[1..]
+                : part.InterfaceName;
+            File.WriteAllText(Path.Combine(partFacadesOutputPath, $"{className}Facade.g.cs"), facadeCode);
+        }
+
+        // Generate factory
+        var factoryCode = renderer.RenderMissilePartFactory(partsToGenerate);
+        File.WriteAllText(Path.Combine(partFacadesOutputPath, "MissilePartFactory.g.cs"), factoryCode);
+
+        Log.Information("Generated {PartCount} missile part interfaces/facades with {ParamCount} total parameters",
+            partCount, paramCount);
     }
 
     private static void CleanupOutputDirs(params string[] paths)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using BrilliantSkies.Ftd.Missiles;
 using GameMissileSize = BrilliantSkies.Ftd.Missiles.MissileSize;
@@ -7,6 +8,8 @@ using BrilliantSkies.Core.Returns.Positions;
 using BrilliantSkies.Ftd.Missiles.Blueprints;
 using System.Linq;
 using BrilliantSkies.Ftd.Missiles.Components;
+using BrilliantSkies.Core.Particles;
+using BrilliantSkies.Core.Logger;
 
 namespace FtDSharp.Facades
 {
@@ -17,6 +20,9 @@ namespace FtDSharp.Facades
         public MissileFacade(Missile missile)
         {
             _missile = missile;
+            Trail = new MissileTrailImpl(this);
+            Flame = new MissileFlameImpl(this);
+            EngineLight = new MissileEngineLightImpl(this);
         }
 
         public int Id => _missile.UniqueId;
@@ -41,8 +47,20 @@ namespace FtDSharp.Facades
         public IMissileLauncher Launcher => null!; // todo: reference launcher
 
         public List<IMissilePart> Parts => _missile.Blueprint.Components
-            .Select(part => (IMissilePart)new MissilePartFacade(part))
+            .Select(part => MissilePartFactory.CreateFacade(part)!)
             .ToList();
+
+        /// <inheritdoc />
+        public IEnumerable<T> GetParts<T>() where T : class, IMissilePart
+            => Parts.OfType<T>();
+
+        /// <inheritdoc />
+        public T? GetPart<T>() where T : class, IMissilePart
+            => Parts.OfType<T>().FirstOrDefault();
+
+        /// <inheritdoc />
+        public bool HasPart<T>() where T : class, IMissilePart
+            => Parts.OfType<T>().Any();
 
         public void Detonate()
         {
@@ -98,16 +116,107 @@ namespace FtDSharp.Facades
             }
         }
 
-    }
+        // ===== Propulsion Visual Control =====
+        // Uses reflection to access the protected _effectSystem field on MissilePropulsion
 
-    public class MissilePartFacade : IMissilePart
-    {
-        private readonly MissileComponent _component;
-        public string PartType => _component.Name;
+        private static readonly FieldInfo? _effectSystemField = typeof(MissilePropulsion)
+            .GetField("_effectSystem", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        public MissilePartFacade(MissileComponent component)
+        internal MissilePropulsion? GetActivePropulsion()
         {
-            _component = component;
+            if (_missile.Blueprint.IsMissile && !_missile.Blueprint.Thruster.IsUnderWater)
+                return _missile.Blueprint.Thruster;
+            if (_missile.Blueprint.IsTorpedo && _missile.Blueprint.Propeller.IsUnderWater)
+                return _missile.Blueprint.Propeller;
+            return null;
         }
+
+        internal AdvancedJetEffects? GetAdvancedJetEffects()
+        {
+            var propulsion = GetActivePropulsion();
+            if (propulsion == null || _effectSystemField == null)
+                return null;
+            return _effectSystemField.GetValue(propulsion) as AdvancedJetEffects;
+        }
+
+        /// <inheritdoc />
+        public IMissileTrail Trail { get; }
+        /// <inheritdoc />
+        public IMissileFlame Flame { get; }
+        /// <inheritdoc />
+        public IMissileEngineLight EngineLight { get; }
+
+        internal class MissileTrailImpl : IMissileTrail
+        {
+            private readonly MissileFacade _parent;
+            public MissileTrailImpl(MissileFacade parent) => _parent = parent;
+
+            public TrailType Variant => _parent.GetActivePropulsion()?.IsIonParameter.Us > 0.5f
+                ? TrailType.Ion : TrailType.Smoke;
+
+            public Color Color
+            {
+                set
+                {
+                    if (Variant == TrailType.Ion)
+                    {
+                        _parent.GetAdvancedJetEffects()?.SetTrailColor(value);
+                    }
+                    else
+                    {
+                        var propulsion = _parent.GetActivePropulsion();
+                        if (propulsion != null)
+                        {
+                            propulsion.parameters.SmokeColor.Locked = false;
+                            propulsion.parameters.SmokeColor.Us = value;
+                        }
+                    }
+                }
+            }
+
+            public bool Enabled
+            {
+                set
+                {
+                    if (Variant == TrailType.Ion)
+                        _parent.GetAdvancedJetEffects()?.EnableTrail(value);
+                    else
+                        _parent.GetAdvancedJetEffects()?.EnableSmoke(value);
+                }
+            }
+        }
+
+        internal class MissileFlameImpl : IMissileFlame
+        {
+            private readonly MissileFacade _parent;
+            public MissileFlameImpl(MissileFacade parent) => _parent = parent;
+
+            public Color Color
+            {
+                set => _parent.GetAdvancedJetEffects()?.SetFlameColor(value);
+            }
+
+            public bool Enabled
+            {
+                set => _parent.GetAdvancedJetEffects()?.EnableFlame(value);
+            }
+        }
+
+        internal class MissileEngineLightImpl : IMissileEngineLight
+        {
+            private readonly MissileFacade _parent;
+            public MissileEngineLightImpl(MissileFacade parent) => _parent = parent;
+
+            public Color Color
+            {
+                set => _parent.GetAdvancedJetEffects()?.SetLightColorOnly(value);
+            }
+
+            public bool Enabled
+            {
+                set => _parent.GetAdvancedJetEffects()?.EnableLight(value);
+            }
+        }
+
     }
 }

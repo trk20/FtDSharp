@@ -13,6 +13,12 @@ public class TemplateRenderer
     private readonly Template _blockFactoryTemplate;
     private readonly Template _blocksAccessorTemplate;
 
+    // Missile part templates
+    private readonly Template _missilePartInterfaceTemplate;
+    private readonly Template _missilePartFacadeTemplate;
+    private readonly Template _missilePartEnumsTemplate;
+    private readonly Template _missilePartFactoryTemplate;
+
     public TemplateRenderer()
     {
         _interfaceTemplate = LoadTemplate("Interface.scriban");
@@ -20,6 +26,12 @@ public class TemplateRenderer
         _logicalInterfacesTemplate = LoadTemplate("LogicalInterfaces.scriban");
         _blockFactoryTemplate = LoadTemplate("BlockFactory.scriban");
         _blocksAccessorTemplate = LoadTemplate("BlocksAccessor.scriban");
+
+        // Missile part templates
+        _missilePartInterfaceTemplate = LoadTemplate("MissilePartInterface.scriban");
+        _missilePartFacadeTemplate = LoadTemplate("MissilePartFacade.scriban");
+        _missilePartEnumsTemplate = LoadTemplate("MissilePartEnums.scriban");
+        _missilePartFactoryTemplate = LoadTemplate("MissilePartFactory.scriban");
     }
 
     private static Template LoadTemplate(string name)
@@ -193,8 +205,9 @@ public class TemplateRenderer
 
     private ScriptObject CreateBlockFactoryModel(List<BlockDefinition> blocks)
     {
-        var model = new ScriptObject();
-        model["blocks"] = blocks.Select(b =>
+        var model = new ScriptObject
+        {
+            ["blocks"] = blocks.Select(b =>
         {
             bool isWeapon = b.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock");
             bool isTurret = typeof(Turrets).IsAssignableFrom(b.GameType);
@@ -205,15 +218,17 @@ public class TemplateRenderer
                 ["is_weapon"] = isWeapon,
                 ["is_turret"] = isTurret
             };
-        }).ToList();
+        }).ToList()
+        };
 
         return model;
     }
 
     private ScriptObject CreateBlocksAccessorModel(List<BlockDefinition> blocks)
     {
-        var model = new ScriptObject();
-        model["blocks"] = blocks.Select(b =>
+        var model = new ScriptObject
+        {
+            ["blocks"] = blocks.Select(b =>
         {
             // Pluralize the name using proper English rules
             var pluralName = Pluralizer.Pluralize(b.ClassName);
@@ -237,8 +252,156 @@ public class TemplateRenderer
                 ["is_weapon"] = isWeapon,
                 ["is_turret"] = isTurret
             };
+        }).ToList()
+        };
+
+        return model;
+    }
+
+    // ============ Missile Part Rendering ============
+
+    public string RenderMissilePartInterface(MissilePartDefinition part)
+    {
+        var model = CreateMissilePartInterfaceModel(part);
+        return _missilePartInterfaceTemplate.Render(model);
+    }
+
+    public string RenderMissilePartFacade(MissilePartDefinition part)
+    {
+        var model = CreateMissilePartFacadeModel(part);
+        return _missilePartFacadeTemplate.Render(model);
+    }
+
+    public string RenderMissilePartEnums(List<GeneratedEnum> enums)
+    {
+        var model = CreateMissilePartEnumsModel(enums);
+        return _missilePartEnumsTemplate.Render(model);
+    }
+
+    public string RenderMissilePartFactory(List<MissilePartDefinition> parts)
+    {
+        var model = CreateMissilePartFactoryModel(parts);
+        return _missilePartFactoryTemplate.Render(model);
+    }
+
+    private ScriptObject CreateMissilePartInterfaceModel(MissilePartDefinition part)
+    {
+        var model = new ScriptObject
+        {
+            ["interface_name"] = part.InterfaceName,
+            ["game_type_name"] = part.GameType.Name,
+            ["parameters"] = part.Parameters.Select(p =>
+            {
+                string typeName = p.IsBool ? "bool" : (p.EnumTypeName ?? "float");
+                return new ScriptObject
+                {
+                    ["name"] = p.PropertyName,
+                    ["type_name"] = typeName,
+                    ["description"] = !string.IsNullOrEmpty(p.Description) ? TypeNameHelper.EscapeXml(p.Description) : null,
+                    ["is_read_only"] = p.IsReadOnly
+                };
+            }).ToList(),
+
+            ["direct_properties"] = part.DirectProperties.Select(p => new ScriptObject
+            {
+                ["name"] = p.PropertyName,
+                ["type_name"] = p.TypeName,
+                ["description"] = !string.IsNullOrEmpty(p.Description) ? TypeNameHelper.EscapeXml(p.Description) : null,
+                ["is_read_only"] = p.IsReadOnly
+            }).ToList()
+        };
+
+        return model;
+    }
+
+    private ScriptObject CreateMissilePartFacadeModel(MissilePartDefinition part)
+    {
+        var model = new ScriptObject();
+        var className = part.InterfaceName.StartsWith("I")
+            ? part.InterfaceName.Substring(1)
+            : part.InterfaceName;
+
+        model["class_name"] = className;
+        model["interface_name"] = part.InterfaceName;
+        model["game_type_full_name"] = part.GameType.FullName;
+        model["parameters"] = part.Parameters.Select(p =>
+        {
+            string typeName = p.IsBool ? "bool" : (p.EnumTypeName ?? "float");
+            return new ScriptObject
+            {
+                ["index"] = p.Index,
+                ["name"] = p.PropertyName,
+                ["type_name"] = typeName,
+                ["is_read_only"] = p.IsReadOnly,
+                ["is_bool"] = p.IsBool,
+                ["is_enum"] = p.EnumTypeName != null
+            };
+        }).ToList();
+
+        model["direct_properties"] = part.DirectProperties.Select(p => new ScriptObject
+        {
+            ["name"] = p.PropertyName,
+            ["type_name"] = p.TypeName,
+            ["access_path"] = p.AccessPath,
+            ["is_read_only"] = p.IsReadOnly,
+            ["is_bool_float"] = p.IsBoolFloat
         }).ToList();
 
         return model;
+    }
+
+    private ScriptObject CreateMissilePartEnumsModel(List<GeneratedEnum> enums)
+    {
+        var model = new ScriptObject
+        {
+            ["enums"] = enums.Select(e => new ScriptObject
+            {
+                ["name"] = e.Name,
+                ["description"] = $"Values for {e.Name} parameter.",
+                ["values"] = e.Values.Select(v => new ScriptObject
+                {
+                    ["name"] = v.Value,
+                    ["int_value"] = (int)v.Key
+                }).ToList()
+            }).ToList()
+        };
+
+        return model;
+    }
+
+    private ScriptObject CreateMissilePartFactoryModel(List<MissilePartDefinition> parts)
+    {
+        var model = new ScriptObject();
+
+        // Sort by inheritance depth (most derived first) to avoid unreachable pattern errors
+        var orderedParts = parts
+            .OrderByDescending(p => GetInheritanceDepth(p.GameType))
+            .ToList();
+
+        model["parts"] = orderedParts.Select(p =>
+        {
+            var className = p.InterfaceName.StartsWith('I')
+                ? p.InterfaceName[1..]
+                : p.InterfaceName;
+            return new ScriptObject
+            {
+                ["class_name"] = className,
+                ["game_type_full_name"] = p.GameType.FullName
+            };
+        }).ToList();
+
+        return model;
+    }
+
+    private static int GetInheritanceDepth(Type type)
+    {
+        int depth = 0;
+        var current = type;
+        while (current.BaseType != null)
+        {
+            depth++;
+            current = current.BaseType;
+        }
+        return depth;
     }
 }

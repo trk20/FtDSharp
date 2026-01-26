@@ -9,9 +9,9 @@ public class BlockDefinition
     public BlockDefinition? Parent { get; set; }
     public string? ParentInterfaceName => Parent?.InterfaceName;
 
-    public List<string> ImplementedLogicalInterfaces { get; set; } = new();
-    public List<PropertyDefinition> Properties { get; set; } = new();
-    public List<PropertyDefinition> AllProperties { get; set; } = new();
+    public List<string> ImplementedLogicalInterfaces { get; set; } = [];
+    public List<PropertyDefinition> Properties { get; set; } = [];
+    public List<PropertyDefinition> AllProperties { get; set; } = [];
     public StoreBinding? StoreBinding { get; set; }
 
     public override string ToString() => $"{ClassName} ({Properties.Count} unique, {AllProperties.Count} total props)";

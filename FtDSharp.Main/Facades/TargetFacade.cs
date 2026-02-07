@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace FtDSharp.Facades
 {
-    public class TargetFacade : ITarget
+    internal sealed class TargetFacade : ITarget
     {
         private readonly TargetObject _target;
         private MainConstruct Main => (_target.C as AllConstruct)!.Main;

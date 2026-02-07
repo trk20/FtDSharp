@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
+using FtDSharp.Helpers;
 
 namespace FtDSharp.Facades
 {
     /// <summary>
     /// Facade for the script's own construct. Extends FriendlyConstructFacade with control capabilities.
     /// </summary>
-    public class MainConstructFacade : FriendlyConstructFacade, IMainConstruct
+    internal sealed class MainConstructFacade : FriendlyConstructFacade, IMainConstruct
     {
         private readonly FrameCache<IReadOnlyList<IMainframe>> _mainframesCache;
         private readonly FrameCache<IReadOnlyList<IWeapon>> _weaponsCache;

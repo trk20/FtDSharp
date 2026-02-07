@@ -13,7 +13,7 @@ using BrilliantSkies.Core.Logger;
 
 namespace FtDSharp.Facades
 {
-    public class MissileFacade : IMissile
+    internal sealed class MissileFacade : IMissile
     {
         private readonly Missile _missile;
 

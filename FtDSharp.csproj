@@ -2,14 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>9</LangVersion>
+    <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <!-- Exclude the CodeGen project folder from compilation -->
+  <!-- Exclude the CodeGen project folder and decompile reference from compilation -->
   <ItemGroup>
     <Compile Remove="FtDSharp.CodeGen\**" />
     <None Remove="FtDSharp.CodeGen\**" />
+    <Compile Remove="FtD_Reference\**" />
+    <None Remove="FtD_Reference\**" />
   </ItemGroup>
 
   <ItemGroup>

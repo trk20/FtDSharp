@@ -23,6 +23,11 @@ namespace FtDSharp.Facades
         /// </summary>
         protected Block BaseBlock => _baseBlock;
 
+        /// <summary>
+        /// Internal accessor for the underlying Block. Used by FacadeCache for cleanup.
+        /// </summary>
+        internal Block Block => _baseBlock;
+
         public bool Equals(IBlock? other)
         {
             if (other is null) return false;

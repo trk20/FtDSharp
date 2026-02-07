@@ -27,6 +27,8 @@ namespace FtDSharp
             {
                 _construct = newConstruct;
                 _facade = _construct != null ? new MainConstructFacade(_construct) : null;
+                FacadeCache.Clear(); // Clear persistent facade cache when switching constructs
+                Blocks.InvalidateCache(); // Clear block list cache when switching constructs
             }
             _log.AttachBinding(luaBox?.binding);
         }

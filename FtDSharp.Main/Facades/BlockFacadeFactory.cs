@@ -4,38 +4,54 @@ using System.Collections.Generic;
 namespace FtDSharp.Facades
 {
     /// <summary>
-    /// Per-frame cache for facade instances. Ensures the same facade is returned
-    /// for the same underlying block within a frame, regardless of access path.
+    /// Persistent cache for facade instances. Ensures the same facade is returned
+    /// for the same underlying block, regardless of access path.
+    /// Unlike per-frame caching, this persists across frames since block references
+    /// are stable until the block is removed from the design.
     /// </summary>
     internal static class FacadeCache
     {
-        // Cache keyed by (block type name, unique ID) - facade type is NOT included
-        // to ensure consistent instances regardless of access path
-        private static readonly FrameCache<Dictionary<(string, int), object>> _cache =
-            new(() => new Dictionary<(string, int), object>());
+        // Persistent cache keyed by (block type name, unique ID)
+        // Facade type is NOT included to ensure consistent instances regardless of access path
+        private static readonly Dictionary<(string, int), object> cache = new();
 
         /// <summary>
         /// Gets a cached facade or creates a new one using the factory.
         /// The cache key is based on the block identity only, not the facade type.
+        /// Handles deleted blocks with lazy cleanup.
         /// </summary>
         public static TFacade GetOrCreate<TFacade>(Block block, Func<TFacade> factory)
             where TFacade : class
         {
             if (block == null) return null!;
 
-            var cache = _cache.Value;
+            // Don't cache facades for deleted blocks
+            if (block.IsDeleted) return factory();
+
             var key = (block.Name, block.IdSet.Id.Us);
 
             if (cache.TryGetValue(key, out var cached))
             {
-                // Return existing instance, cast to requested type if possible
+                // Lazy cleanup: if the cached facade's underlying block was deleted, remove and recreate
+                if (cached is BlockFacadeBase facade && facade.Block.IsDeleted)
+                {
+                    cache.Remove(key);
+                    var newFacade = factory();
+                    cache[key] = newFacade;
+                    return newFacade;
+                }
                 return (cached as TFacade)!;
             }
 
-            var facade = factory();
-            cache[key] = facade;
-            return facade;
+            var createdFacade = factory();
+            cache[key] = createdFacade;
+            return createdFacade;
         }
+
+        /// <summary>
+        /// Clears the entire facade cache. Called when switching constructs or for testing.
+        /// </summary>
+        public static void Clear() => cache.Clear();
     }
 
     /// <summary>

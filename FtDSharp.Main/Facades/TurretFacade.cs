@@ -51,33 +51,49 @@ namespace FtDSharp.Facades
         }
 
         // Override Track methods to use the turret controller (coordinate all weapons)
-        public new TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
+        public override AimResult Track(Vector3 targetPosition)
+        {
+            return _turretController.Value.Track(targetPosition, Vector3.zero).AimResult;
+        }
+
+        public override TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
         {
             return _turretController.Value.Track(targetPosition, targetVelocity);
         }
 
-        public new TrackResult Track(ITargetable targetable)
+        public override TrackResult Track(ITargetable targetable)
         {
             return _turretController.Value.Track(targetable);
         }
 
-        public new TrackResult Track(ITargetable targetable, TrackOptions options)
+        public override TrackResult Track(ITargetable targetable, TrackOptions options)
         {
             return _turretController.Value.Track(targetable, options);
         }
 
-        public new TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
+        public override TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
         {
             return _turretController.Value.Track(targetPosition, targetVelocity, targetAcceleration);
         }
 
-        public new TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
+        public override TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
         {
             return _turretController.Value.Track(targetPosition, targetVelocity, targetAcceleration, options);
         }
 
+        // Override AimAt and TryFireAt to use turret controller
+        public override AimResult AimAt(Vector3 worldPosition)
+        {
+            return _turretController.Value.AimAt(worldPosition);
+        }
+
+        public override bool TryFireAt(Vector3 worldPosition)
+        {
+            return _turretController.Value.TryFireAt(worldPosition);
+        }
+
         // Override Fire to fire all mounted weapons
-        public new bool Fire()
+        public override bool Fire()
         {
             return _turretController.Value.Fire();
         }

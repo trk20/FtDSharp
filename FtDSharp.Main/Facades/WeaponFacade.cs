@@ -93,7 +93,7 @@ namespace FtDSharp.Facades
             _lastResult = new TrackResult(result, 0f, Vector3.zero, false, IsReady);
         }
 
-        public AimResult AimAt(Vector3 worldPosition)
+        public virtual AimResult AimAt(Vector3 worldPosition)
         {
             var result = AimAtInternal(worldPosition);
             SetAimState(result);
@@ -136,22 +136,22 @@ namespace FtDSharp.Facades
             );
         }
 
-        public AimResult Track(Vector3 targetPosition)
+        public virtual AimResult Track(Vector3 targetPosition)
         {
             return Track(targetPosition, Vector3.zero, Vector3.zero, TrackOptions.Default).AimResult;
         }
 
-        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
+        public virtual TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
         {
             return Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default);
         }
 
-        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
+        public virtual TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
         {
             return Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default);
         }
 
-        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
+        public virtual TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
         {
             // Calculate lead for THIS weapon only, aim only this weapon (no turret control)
             var weaponPos = _weapon.GameWorldPosition;
@@ -198,20 +198,20 @@ namespace FtDSharp.Facades
             return trackResult;
         }
 
-        public TrackResult Track(ITargetable targetable)
+        public virtual TrackResult Track(ITargetable targetable)
         {
             if (targetable == null) return new TrackResult(new AimResult(false, false, false), 0f, Vector3.zero, false, false);
             return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default);
         }
 
-        public TrackResult Track(ITargetable targetable, TrackOptions options)
+        public virtual TrackResult Track(ITargetable targetable, TrackOptions options)
         {
             if (targetable == null) return new TrackResult(new AimResult(false, false, false), 0f, Vector3.zero, false, false);
             return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, options);
         }
 
 
-        public bool Fire()
+        public virtual bool Fire()
         {
             return FireInternal();
         }
@@ -224,7 +224,7 @@ namespace FtDSharp.Facades
             return _fireReturn.GetFiredAny();
         }
 
-        public bool TryFireAt(Vector3 worldPosition)
+        public virtual bool TryFireAt(Vector3 worldPosition)
         {
             var result = AimAt(worldPosition);
             if (result.IsOnTarget && IsReady)

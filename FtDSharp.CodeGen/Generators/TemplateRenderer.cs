@@ -249,6 +249,7 @@ public class TemplateRenderer
                 ["has_store"] = b.StoreBinding != null,
                 ["store_property_name"] = b.StoreBinding?.PropertyName,
                 ["is_interface_store"] = b.StoreBinding?.IsInterfaceStore ?? false,
+                ["requires_type_filter"] = b.StoreBinding?.RequiresTypeFilter ?? false,
                 ["is_weapon"] = isWeapon,
                 ["is_turret"] = isTurret
             };

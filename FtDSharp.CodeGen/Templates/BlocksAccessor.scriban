@@ -47,7 +47,7 @@ namespace FtDSharp
         }
 
 {{~ for block in blocks ~}}
-{{~ if block.has_store && !block.is_interface_store ~}}
+{{~ if block.has_store && !block.is_interface_store && !block.requires_type_filter ~}}
         private static readonly FrameCache<IReadOnlyList<{{ block.interface_name }}>> {{ block.field_name }} = new(() =>
         {
             var store = ScriptApi.Context?.BlockTypeStorage?.{{ block.store_property_name }};
@@ -67,7 +67,7 @@ namespace FtDSharp
             }
             return result;
         });
-{{~ else if block.has_store && block.is_interface_store ~}}
+{{~ else if block.has_store && (block.is_interface_store || block.requires_type_filter) ~}}
         private static readonly FrameCache<IReadOnlyList<{{ block.interface_name }}>> {{ block.field_name }} = new(() =>
         {
             var store = ScriptApi.Context?.BlockTypeStorage?.{{ block.store_property_name }};

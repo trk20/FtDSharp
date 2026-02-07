@@ -14,20 +14,24 @@ namespace FtDSharp
 {
     public class ScriptHost
     {
-        private readonly BasicLogApi _log = new BasicLogApi();
         private IFtDSharp? _instance;
         private Assembly? _assembly;
         private DateTime _startUtc;
         private string? _hash;
+        private string? _lastError;
         private static readonly MetadataReference[] DefaultReferences = BuildDefaultReferences();
         private const string ScriptPrelude = "#line 1\n";
 
         public bool Active => _instance != null;
         public string? CurrentHash => _hash;
         public TimeSpan LastCompileTime { get; private set; }
+        public string? LastError => _lastError;
 
-        internal void LoadScript(string code, string hash, IScriptContext? ctx = null)
+        internal (bool Success, Diagnostic[] Diagnostics) LoadScript(string code, string hash, IScriptContext? ctx = null)
         {
+            _lastError = null;
+            var diagnosticsList = new List<Diagnostic>();
+
             try
             {
                 var sw = Stopwatch.StartNew();
@@ -54,20 +58,36 @@ namespace FtDSharp
                 var validationErrors = ForbiddenNamespaceValidator.GetInvalidUsages(compilation, syntaxTree);
                 if (validationErrors.Count > 0)
                 {
-                    throw new InvalidOperationException("Forbidden namespace usage:\n" + string.Join("\n", validationErrors));
+                    _lastError = "Forbidden namespace usage:\n" + string.Join("\n", validationErrors);
+                    _instance = null;
+                    _assembly = null;
+                    _hash = null;
+                    return (false, diagnosticsList.ToArray());
                 }
 
                 using var ms = new MemoryStream();
                 EmitResult emitResult = compilation.Emit(ms);
                 if (!emitResult.Success)
                 {
-                    var diag = string.Join("\n", emitResult.Diagnostics.Select(d => d.ToString()));
-                    throw new InvalidOperationException("Compilation failed:\n" + diag);
+                    // Return actual Roslyn diagnostics
+                    diagnosticsList.AddRange(emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+                    _lastError = string.Join("\n", diagnosticsList.Select(d => d.ToString()));
+                    _instance = null;
+                    _assembly = null;
+                    _hash = null;
+                    return (false, diagnosticsList.ToArray());
                 }
 
                 ms.Seek(0, SeekOrigin.Begin);
                 _assembly = Assembly.Load(ms.ToArray());
-                var type = _assembly.GetTypes().FirstOrDefault(t => typeof(IFtDSharp).IsAssignableFrom(t)) ?? throw new Exception("No class implementing IFtDSharp found.");
+                var type = _assembly.GetTypes().FirstOrDefault(t => typeof(IFtDSharp).IsAssignableFrom(t));
+                if (type == null)
+                {
+                    _lastError = "No class implementing IFtDSharp found. Your script must have a class that implements IFtDSharp.";
+                    _instance = null;
+                    _hash = null;
+                    return (false, diagnosticsList.ToArray());
+                }
 
                 // Push context before instantiation so Game/Logging APIs are available in constructor
                 using (ctx != null ? ScriptApi.PushContext(ctx) : null)
@@ -77,29 +97,32 @@ namespace FtDSharp
 
                 LastCompileTime = sw.Elapsed;
                 _hash = hash;
-
+                return (true, diagnosticsList.ToArray());
             }
             catch (Exception ex)
             {
-                _log.Error("Error loading script: " + ex.Message + "\n " + ex.StackTrace ?? "");
+                _lastError = $"Error loading script: {ex.Message}";
                 _instance = null;
                 _assembly = null;
                 _hash = null;
+                return (false, diagnosticsList.ToArray());
             }
         }
 
-        internal bool TryCompileAndActivate(string code, IScriptContext ctx, out (string Hash, TimeSpan CompileTime, Diagnostic[] Diagnostics) diagnostics)
+        internal bool TryCompileAndActivate(string code, IScriptContext ctx, out (string Hash, TimeSpan CompileTime, Diagnostic[] Diagnostics, string? ErrorMessage) diagnostics)
         {
             var hash = ComputeHash(code);
-            diagnostics = (hash, TimeSpan.Zero, Array.Empty<Diagnostic>());
 
-            LoadScript(code, hash, ctx);
-            if (_instance != null)
+            var (success, diags) = LoadScript(code, hash, ctx);
+
+            if (success)
             {
-                diagnostics = (hash, LastCompileTime, Array.Empty<Diagnostic>());
+                diagnostics = (hash, LastCompileTime, diags, null);
                 _startUtc = DateTime.UtcNow;
                 return true;
             }
+
+            diagnostics = (hash, TimeSpan.Zero, diags, _lastError);
             return false;
         }
 
@@ -115,7 +138,7 @@ namespace FtDSharp
             }
             catch (Exception ex)
             {
-                _log.Error($"Error during script execution: {ex.Message}\n{ex.StackTrace}");
+                ctx.Log.Error($"Error during script execution: {ex.Message}\n{ex.StackTrace}");
                 _instance = null; // deactivate on error
             }
         }

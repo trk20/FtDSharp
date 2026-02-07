@@ -143,7 +143,7 @@ public class SampleScript : IFtDSharp
                 }
                 else
                 {
-                    ReportDiagnostics(result.Diagnostics);
+                    ReportDiagnostics(result.Diagnostics, result.ErrorMessage);
                 }
 
                 return success;
@@ -165,8 +165,16 @@ public class SampleScript : IFtDSharp
                 _host.Tick(_context, delta);
             }
 
-            private void ReportDiagnostics(Diagnostic[] diagnostics)
+            private void ReportDiagnostics(Diagnostic[] diagnostics, string? errorMessage)
             {
+                // Show the human-readable error message if available
+                if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    _context.Log.Error(errorMessage);
+                    return;
+                }
+
+                // Fall back to Roslyn diagnostics
                 if (diagnostics == null || diagnostics.Length == 0)
                 {
                     _context.Log.Error("Failed to compile LuaBox script (no diagnostics available).");

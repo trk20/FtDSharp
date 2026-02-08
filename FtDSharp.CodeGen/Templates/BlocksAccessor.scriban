@@ -39,6 +39,9 @@ namespace FtDSharp
         /// <summary>Get a block by its unique ID.</summary>
         public static IBlock? ById(int uniqueId) => All.FirstOrDefault(b => b.UniqueId == uniqueId);
 
+        /// <summary>Get a typed block by its unique ID. Returns null if not found or wrong type.</summary>
+        public static T? ById<T>(int uniqueId) where T : class, IBlock => All.OfType<T>().FirstOrDefault(b => b.UniqueId == uniqueId);
+
         /// <summary>Forces cache invalidation on next access. Called when switching constructs. For framework use only.</summary>
         public static void InvalidateCache()
         {
@@ -60,9 +63,9 @@ namespace FtDSharp
             foreach (var block in store.Blocks)
             {
 {{~ if block.is_weapon || block.is_turret ~}}
-                if (block != null) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block, allConstruct)));
+                if (block != null && block.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block, allConstruct)));
 {{~ else ~}}
-                if (block != null) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block)));
+                if (block != null && block.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block)));
 {{~ end ~}}
             }
             return result;
@@ -80,9 +83,9 @@ namespace FtDSharp
             foreach (var block in store.Blocks)
             {
 {{~ if block.is_weapon || block.is_turret ~}}
-                if (block is {{ block.game_type_full_name }} concrete) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete, allConstruct)));
+                if (block is {{ block.game_type_full_name }} concrete && concrete.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete, allConstruct)));
 {{~ else ~}}
-                if (block is {{ block.game_type_full_name }} concrete) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete)));
+                if (block is {{ block.game_type_full_name }} concrete && concrete.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete)));
 {{~ end ~}}
             }
             return result;

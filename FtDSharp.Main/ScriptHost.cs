@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using BrilliantSkies.Profiling;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -132,6 +133,8 @@ namespace FtDSharp
 
             using var scope = ScriptApi.PushContext(ctx);
 
+            var profile = AbstractModule<FtDSharpProfiler>.Instance.ScriptExecution;
+            var startTime = profile.Start();
             try
             {
                 _instance.Update(deltaTime);
@@ -140,6 +143,10 @@ namespace FtDSharp
             {
                 ctx.Log.Error($"Error during script execution: {ex.Message}\n{ex.StackTrace}");
                 _instance = null; // deactivate on error
+            }
+            finally
+            {
+                profile.Finish(startTime);
             }
         }
 

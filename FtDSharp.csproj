@@ -60,6 +60,9 @@
     <Reference Include="Breadboards">
       <HintPath>ftd-managed\Breadboards.dll</HintPath>
     </Reference>
+    <Reference Include="Profiling">
+      <HintPath>ftd-managed\Profiling.dll</HintPath>
+    </Reference>
     <Reference Include="Localisation">
       <HintPath>..\ftd-managed\Localisation.dll</HintPath>
     </Reference>

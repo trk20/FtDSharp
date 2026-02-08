@@ -135,13 +135,13 @@ namespace FtDSharp.Facades
 
         #endregion
 
-        /// <summary> Enumerate all blocks on the construct and subconstructs. </summary>
+        /// <summary> Enumerate all alive blocks on the construct and subconstructs. </summary>
         public IEnumerable<IBlock> GetAllBlocks()
         {
             // Blocks on the main construct
             foreach (var block in _construct.AllBasics.AliveAndDead.Blocks)
             {
-                if (block.IsStructural) continue;
+                if (block.IsStructural || !block.IsAlive) continue;
                 var wrapped = BlockFactory.Wrap(block);
                 if (wrapped != null) yield return wrapped;
             }
@@ -151,7 +151,7 @@ namespace FtDSharp.Facades
             {
                 foreach (var block in sc.AllBasics.AliveAndDead.Blocks)
                 {
-                    if (block.IsStructural) continue;
+                    if (block.IsStructural || !block.IsAlive) continue;
                     var wrapped = BlockFactory.Wrap(block);
                     if (wrapped != null) yield return wrapped;
                 }

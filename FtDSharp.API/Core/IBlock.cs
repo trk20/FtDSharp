@@ -41,6 +41,12 @@ namespace FtDSharp
         /// <summary>Maximum health of the block.</summary>
         float MaximumHealth { get; }
         /// <summary>
+        /// True if this block is alive and operational.
+        /// False if the block has been killed (health = 0) or removed from the design.
+        /// Check this before performing operations on cached block references.
+        /// </summary>
+        bool IsAlive { get; }
+        /// <summary>
         /// The depth of this block in the subobject hierarchy.
         /// 0 = on root construct, 1 = on turret/spinblock, 2 = on turret-on-turret, etc.
         /// </summary>

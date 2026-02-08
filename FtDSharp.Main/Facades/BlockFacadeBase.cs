@@ -118,6 +118,8 @@ namespace FtDSharp.Facades
 
         public float MaximumHealth => _baseBlock.MaximumHealth;
 
+        public bool IsAlive => _baseBlock?.IsAlive ?? false;
+
         public int SubobjectDepth
         {
             get

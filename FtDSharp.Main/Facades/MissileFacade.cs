@@ -13,9 +13,17 @@ using BrilliantSkies.Core.Logger;
 
 namespace FtDSharp.Facades
 {
+    // Position holder to avoid closure allocations in AimAt
+    internal sealed class MutableAimPoint
+    {
+        public Vector3 Value;
+    }
+
     internal sealed class MissileFacade : IMissile
     {
         private readonly Missile _missile;
+        private MutableAimPoint? _cachedAimPoint;
+        private MissileTarget? _cachedTarget;
 
         public MissileFacade(Missile missile)
         {
@@ -73,9 +81,18 @@ namespace FtDSharp.Facades
             var error = receiver.ErrorSeed;
             // todo: figure out how to apply error without being easily avoided
             // stability/detection error already applied to target position, need something for ECM/GPP error?
-            var posReturn = new PositionReturnPosition(() => aimPoint + error);
-            var target = new MissileTarget("LuaScript", posReturn, MissileTargetPriority.GuidancePoint);
-            _missile.TargetManager.SetTarget(target, MissileTargetPriorityUse.ApplyIfHigherOrSamePriority);
+
+            // Reuse target and position objects to avoid allocations
+            // The closure captures _cachedAimPoint once; we update its Value each call
+            if (_cachedAimPoint == null)
+            {
+                _cachedAimPoint = new MutableAimPoint();
+                var posReturn = new PositionReturnPosition(() => _cachedAimPoint.Value);
+                _cachedTarget = new MissileTarget("LuaScript", posReturn, MissileTargetPriority.GuidancePoint);
+            }
+
+            _cachedAimPoint.Value = aimPoint + error;
+            _missile.TargetManager.SetTarget(_cachedTarget!, MissileTargetPriorityUse.ApplyIfHigherOrSamePriority);
         }
 
         private float GetThrust()

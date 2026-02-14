@@ -14,6 +14,9 @@ namespace FtDSharp.Facades
         private readonly FrameCache<IReadOnlyList<ITurret>> _turretsCache;
         private readonly FrameCache<List<IMissile>> _missilesCache;
 
+        // cache missile facades by UIDs to avoid per-frame allocation
+        private static readonly Dictionary<int, MissileFacade> _missileCache = new();
+
         public MainConstructFacade(MainConstruct construct) : base(construct)
         {
             _mainframesCache = new FrameCache<IReadOnlyList<IMainframe>>(GetMainframes);
@@ -161,6 +164,8 @@ namespace FtDSharp.Facades
         private List<IMissile> GetMissiles()
         {
             var missiles = new List<IMissile>();
+            var seenIds = new HashSet<int>();
+
             if (_construct.iBlockTypeStorage?.MissileLuaTransceiverStore?.Blocks != null)
             {
                 foreach (var transceiver in _construct.iBlockTypeStorage.MissileLuaTransceiverStore.Blocks)
@@ -169,13 +174,36 @@ namespace FtDSharp.Facades
 
                     foreach (var missile in transceiver.Missiles)
                     {
-                        if (missile != null)
+                        if (missile != null && missile.IsAlive())
                         {
-                            missiles.Add(new MissileFacade(missile));
+                            var id = missile.UniqueId;
+                            seenIds.Add(id);
+
+                            // Get or create cached facade
+                            if (!_missileCache.TryGetValue(id, out var facade))
+                            {
+                                facade = new MissileFacade(missile);
+                                _missileCache[id] = facade;
+                            }
+                            missiles.Add(facade);
                         }
                     }
                 }
             }
+
+            // remove facades for missiles that are no longer alive to prevent unbounded cache growth
+            if (_missileCache.Count > seenIds.Count)
+            {
+                var toRemove = new List<int>();
+                foreach (var kvp in _missileCache)
+                {
+                    if (!seenIds.Contains(kvp.Key))
+                        toRemove.Add(kvp.Key);
+                }
+                foreach (var id in toRemove)
+                    _missileCache.Remove(id);
+            }
+
             return missiles;
         }
 

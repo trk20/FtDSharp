@@ -83,12 +83,18 @@ public class TemplateRenderer
 
         // Determine if this is a weapon block
         bool isWeapon = block.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock");
+        bool isTurret = typeof(Turrets).IsAssignableFrom(block.GameType);
 
         // Build inheritance list
         var baseInterfaces = new List<string>();
         if (block.ParentInterfaceName != null)
         {
             baseInterfaces.Add(block.ParentInterfaceName);
+        }
+        else if (isTurret)
+        {
+            // Turret blocks inherit from ITurret (which includes IWeapon, IBlock, IWeaponControl)
+            baseInterfaces.Add("ITurret");
         }
         else if (isWeapon)
         {

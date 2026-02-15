@@ -9,39 +9,10 @@ using UnityEngine;
 namespace FtDSharp
 {
     /// <summary>
-    /// Provides typed access to controlled weapons and turrets.
-    /// </summary>
-    public class ControlledItems
-    {
-        private readonly IReadOnlyList<IWeapon> _weapons;
-        private readonly IReadOnlyList<ITurret> _turrets;
-        private readonly IReadOnlyList<IWeapon> _all;
-
-        internal ControlledItems(IEnumerable<IWeapon> weapons, IEnumerable<ITurret> turrets)
-        {
-            _weapons = weapons.ToList();
-            _turrets = turrets.ToList();
-            _all = _turrets.Cast<IWeapon>().Concat(_weapons).ToList();
-        }
-
-        /// <summary>All weapons (excluding turrets) controlled by this controller.</summary>
-        public IReadOnlyList<IWeapon> Weapons => _weapons;
-
-        /// <summary>All turrets controlled by this controller.</summary>
-        public IReadOnlyList<ITurret> Turrets => _turrets;
-
-        /// <summary>All items (weapons and turrets) controlled by this controller.</summary>
-        public IReadOnlyList<IWeapon> All => _all;
-
-        /// <summary>Total count of all controlled items.</summary>
-        public int Count => _all.Count;
-    }
-
-    /// <summary>
     /// Controls one or more weapons/turrets with unified aiming and firing.
     /// Handles hierarchy correctly: turrets aim based on their closest weapons' calculated directions.
     /// </summary>
-    public class WeaponController : IWeaponControl
+    public class WeaponController : IWeaponController
     {
         private float? _overrideProjectileSpeed;
         private List<WeaponItem> _weapons = null!;
@@ -196,7 +167,7 @@ namespace FtDSharp
                     : (worldPosition - turret.WorldPosition).normalized;
             }
 
-            return AimAllAt(worldPosition);
+            return AimAllAt();
         }
 
         #endregion
@@ -438,15 +409,6 @@ namespace FtDSharp
             return (sum / weapons.Count).normalized;
         }
 
-        private static AimResult AggregateResults(AimResult a, AimResult b)
-        {
-            return new AimResult(
-                a.IsOnTarget || b.IsOnTarget,
-                a.IsBlocked || b.IsBlocked,
-                a.CanAim || b.CanAim
-            );
-        }
-
         #endregion
 
         #region Direction Calculation
@@ -594,7 +556,7 @@ namespace FtDSharp
         /// <summary>
         /// Aims all items and propagates AimResult state (for AimAt calls without lead calculation).
         /// </summary>
-        private AimResult AimAllAt(Vector3 worldPosition)
+        private AimResult AimAllAt()
         {
             bool isOnTarget = false, isBlocked = false, canAim = false;
 

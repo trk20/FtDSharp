@@ -48,10 +48,7 @@ namespace FtDSharp.Facades
         {
             get
             {
-                if (_cachedWeaponType == null)
-                {
-                    _cachedWeaponType = DetermineWeaponType();
-                }
+                _cachedWeaponType ??= DetermineWeaponType();
                 return _cachedWeaponType.Value;
             }
         }
@@ -273,6 +270,7 @@ namespace FtDSharp.Facades
             PlasmaMantlet or PlasmaMantletAA => WeaponType.Plasma,
             ParticleCannon => WeaponType.ParticleCannon,
             FlamerMain => WeaponType.Flamer,
+            WorldWarCannonBase => WeaponType.SimpleWeapon,
             _ => WeaponType.Unknown
         };
 
@@ -311,8 +309,9 @@ namespace FtDSharp.Facades
                 PlasmaMantletAA plasmaAA => CheckPlasmaAAReady(plasmaAA),
                 PlasmaMantlet plasma => CheckPlasmaReady(plasma),
                 FlamerMain flamer => CheckFlamerReady(flamer),
-                MissileControl => true, // Missile controller checking tbd
+                MissileControl mc => CheckMissileControlReady(mc),
                 ParticleCannon pac => pac.PCLoaded && pac.WeaponSyncData.SyncFireReady(pac, pac.CheckTimes.LastFireTime),
+                WorldWarCannonBase swc => CheckSimpleWeaponReady(swc),
                 Turrets => true, // Turrets delegate to their weapons
                 _ => true // Unknown weapons assumed ready
             };
@@ -502,6 +501,46 @@ namespace FtDSharp.Facades
                 if (flamer.GetFirePoint(0f).y < 0.5f)
                     return false;
 
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private bool CheckMissileControlReady(MissileControl mc)
+        {
+            try
+            {
+                if (!mc.WeaponSyncData.SyncFireReady(mc, mc.CheckTimes.LastFireTime)) return false;
+
+                var node = mc.Node;
+                if (node == null) return false;
+
+                foreach (var pad in node.firingOrder)
+                {
+                    if (pad == null) continue;
+                    foreach (var tube in pad.MissileTubes)
+                    {
+                        if (tube != null && tube.Loaded) return true;
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private bool CheckSimpleWeaponReady(WorldWarCannonBase swc)
+        {
+            try
+            {
+                if (swc.LoadedShellCount == 0) return false;
+                if (!swc.WeaponSyncData.SyncFireReady(swc, swc.CheckTimes.LastFireTime)) return false;
                 return true;
             }
             catch

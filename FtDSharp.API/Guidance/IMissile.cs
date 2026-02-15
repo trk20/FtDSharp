@@ -33,8 +33,8 @@ namespace FtDSharp
         Quaternion Rotation { get; }
         /// <summary>Missile forward direction in world coordinates.</summary>
         Vector3 Forward { get; }
-        /// <summary>Launcher that fired this missile.</summary>
-        IMissileLauncher Launcher { get; }
+        /// <summary>Launcher that fired this missile, or null if unavailable.</summary>
+        IMissileLauncher? Launcher { get; }
         /// <summary>All controllable parts on this missile.</summary>
         List<IMissilePart> Parts { get; }
         /// <summary>Gets all parts of the specified type.</summary>

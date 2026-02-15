@@ -24,6 +24,7 @@ namespace FtDSharp.Facades
         private readonly Missile _missile;
         private MutableAimPoint? _cachedAimPoint;
         private MissileTarget? _cachedTarget;
+        private List<IMissilePart>? _partsCache;
 
         public MissileFacade(Missile missile)
         {
@@ -52,11 +53,13 @@ namespace FtDSharp.Facades
         public Vector3 Velocity => _missile.Velocity;
         public Quaternion Rotation => Quaternion.LookRotation(_missile.Forward, Vector3.up); // approx
         public Vector3 Forward => _missile.Forward;
-        public IMissileLauncher Launcher => null!; // todo: reference launcher
+        /// <summary>Launcher that fired this missile - NOT CURRENTLY IMPLEMENTED, will return null. </summary>
+        public IMissileLauncher? Launcher => null; // todo: reference launcher
 
-        public List<IMissilePart> Parts => _missile.Blueprint.Components
-            .Select(part => MissilePartFactory.CreateFacade(part)!)
-            .ToList();
+        public List<IMissilePart> Parts =>
+            _partsCache ??= _missile.Blueprint.Components
+                .Select(part => MissilePartFactory.CreateFacade(part)!)
+                .ToList();
 
         /// <inheritdoc />
         public IEnumerable<T> GetParts<T>() where T : class, IMissilePart

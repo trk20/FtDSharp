@@ -9,6 +9,9 @@ namespace FtDSharp
     /// </summary>
     public static class Weapons
     {
+        private static IReadOnlyList<IWeapon>? _lastAll;
+        private static readonly Dictionary<WeaponType, IReadOnlyList<IWeapon>> _typeCache = new();
+
         /// <summary>
         /// Gets all weapons on the current construct (excluding turrets).
         /// Includes weapons on subconstructs (turrets, spinblocks, etc).
@@ -25,36 +28,59 @@ namespace FtDSharp
         /// <summary>
         /// Gets all APS (Advanced Projectile System) weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> APS => All.Where(w => w.WeaponType == WeaponType.APS).ToList();
+        public static IReadOnlyList<IWeapon> APS => GetByType(WeaponType.APS);
 
         /// <summary>
         /// Gets all CRAM cannons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> CRAM => All.Where(w => w.WeaponType == WeaponType.CRAM).ToList();
+        public static IReadOnlyList<IWeapon> CRAM => GetByType(WeaponType.CRAM);
 
         /// <summary>
         /// Gets all laser weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> Lasers => All.Where(w => w.WeaponType == WeaponType.Laser).ToList();
+        public static IReadOnlyList<IWeapon> Lasers => GetByType(WeaponType.Laser);
 
         /// <summary>
         /// Gets all plasma weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> Plasma => All.Where(w => w.WeaponType == WeaponType.Plasma).ToList();
+        public static IReadOnlyList<IWeapon> Plasma => GetByType(WeaponType.Plasma);
 
         /// <summary>
         /// Gets all particle cannons (PAC).
         /// </summary>
-        public static IReadOnlyList<IWeapon> ParticleCannons => All.Where(w => w.WeaponType == WeaponType.ParticleCannon).ToList();
+        public static IReadOnlyList<IWeapon> ParticleCannons => GetByType(WeaponType.ParticleCannon);
 
         /// <summary>
         /// Gets all flamers.
         /// </summary>
-        public static IReadOnlyList<IWeapon> Flamers => All.Where(w => w.WeaponType == WeaponType.Flamer).ToList();
+        public static IReadOnlyList<IWeapon> Flamers => GetByType(WeaponType.Flamer);
 
         /// <summary>
-        /// Gets all missile launchers.
+        /// Gets all simple weapons (WWII cannons).
         /// </summary>
-        public static IReadOnlyList<IWeapon> MissileControllers => All.Where(w => w.WeaponType == WeaponType.Missile).ToList();
+        public static IReadOnlyList<IWeapon> SimpleWeapons => GetByType(WeaponType.SimpleWeapon);
+
+        /// <summary>
+        /// Gets all missile controllers.
+        /// </summary>
+        public static IReadOnlyList<IWeapon> MissileControllers => GetByType(WeaponType.Missile);
+
+        private static IReadOnlyList<IWeapon> GetByType(WeaponType type)
+        {
+            var all = All;
+            if (!ReferenceEquals(all, _lastAll))
+            {
+                _lastAll = all;
+                _typeCache.Clear();
+            }
+
+            if (!_typeCache.TryGetValue(type, out var cached))
+            {
+                cached = all.Where(w => w.WeaponType == type).ToList();
+                _typeCache[type] = cached;
+            }
+
+            return cached;
+        }
     }
 }

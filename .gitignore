@@ -15,6 +15,7 @@ obj/
 # Visual Studio / VS Code
 .vs/
 .github/
+.serena/
 !CODEOWNERS
 !design-objectives.md
 .vscode/

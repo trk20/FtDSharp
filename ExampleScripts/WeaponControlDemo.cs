@@ -53,6 +53,14 @@ public class WeaponControlDemo : IFtDSharp
             Log($"  Track returned: IsOnTarget={result.IsOnTarget}, IsReady={result.IsReady}, CanFire={result.CanFire}, CanAim={result.CanAim}");
 
             var turretColor = result.CanFire ? Color.green : (result.CanAim ? Color.yellow : Color.red);
+
+            foreach (var weapon in turret.Weapons)
+            {
+                Log($"  Mounted Weapon {weapon.UniqueId}: Parent={weapon.Parent?.UniqueId}");
+
+                // draw weapon aim directions
+                Arrow(weapon.WorldPosition, weapon.WorldPosition + weapon.AimDirection * 30f, turretColor, width: 1f);
+            }
             Point(turret.WorldPosition, turretColor, size: 3f);
 
             // fire all weapons on turret if ready (CanFire = IsOnTarget && IsReady)

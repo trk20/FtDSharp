@@ -12,8 +12,9 @@ namespace FtDSharp
         Torpedo,        // Torpedo launchers
         Laser,          // Laser systems
         Plasma,         // Plasma cannons
-        ParticleCannon,
-        Flamer,
+        ParticleCannon, // Particle cannons
+        Flamer,         // Flamethrowers
+        SimpleWeapon,   // Simple weapons
         Turret          // Turret (coordinates weapons, not a weapon itself)
     }
 }

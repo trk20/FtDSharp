@@ -21,6 +21,15 @@ public class InheritanceFilterPass : IBlockPass
         "OnTarget", "CanAim", "IsBlocked", "CanFire", "FlightTime", "AimPoint", "BlockedByTerrain"
     };
 
+    /// <summary>
+    /// Properties defined in TurretFacade that should not be re-generated in derived turret facades.
+    /// </summary>
+    public static readonly HashSet<string> TurretFacadeProperties = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Weapons", "Azimuth", "Elevation",
+        "AnyOnTarget", "AllOnTarget", "AnyReady", "AllReady", "AnyCanFire", "AllCanFire"
+    };
+
     public void Process(List<BlockDefinition> blocks)
     {
         Log.Debug("Filtering inherited properties for {Count} blocks...", blocks.Count);
@@ -36,12 +45,14 @@ public class InheritanceFilterPass : IBlockPass
         // Determine if this is a weapon/turret block
         bool isWeaponOrTurret = block.ImplementedLogicalInterfaces.Contains("IConstructableWeaponBlock")
                                || typeof(Turrets).IsAssignableFrom(block.GameType);
+        bool isTurret = typeof(Turrets).IsAssignableFrom(block.GameType);
 
         block.Properties = [.. block.AllProperties
             .Where(p => !inheritedNames.Contains(p.Name))
             .Where(p => !logicalPropNames.Contains(p.Name))
             .Where(p => !BaseIBlockProperties.Contains(p.Name))
             .Where(p => !isWeaponOrTurret || !WeaponFacadeProperties.Contains(p.Name))
+            .Where(p => !isTurret || !TurretFacadeProperties.Contains(p.Name))
             .OrderBy(p => p.Name)];
     }
 }

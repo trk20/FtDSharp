@@ -13,7 +13,7 @@ namespace FtDSharp
     {
         private const string LegacyLuaTemplate = "function Update(I)\n-- put your code here \nend";
 
-        private const string DefaultCSharpTemplate =
+        internal const string DefaultCSharpTemplate =
 @"using FtDSharp;
 using static FtDSharp.Logging;
 using static FtDSharp.Game;

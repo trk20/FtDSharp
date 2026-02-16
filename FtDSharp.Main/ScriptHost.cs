@@ -36,51 +36,60 @@ namespace FtDSharp
             try
             {
                 var sw = Stopwatch.StartNew();
-                var syntaxTree = CSharpSyntaxTree.ParseText(ScriptPrelude + code);
+                byte[] ilBytes;
 
-                var compilation = CSharpCompilation.Create(
-                    assemblyName: $"FtDSharpScript_{Guid.NewGuid():N}",
-                    syntaxTrees: new[] { syntaxTree },
-                    references: DefaultReferences,
-                    options: new CSharpCompilationOptions(
-                        OutputKind.DynamicallyLinkedLibrary,
-                        optimizationLevel: OptimizationLevel.Release,
-                        allowUnsafe: false,
-                        usings: new[]
-                        {
-                            "System",
-                            "System.Collections.Generic",
-                            "System.Linq",
-                            "UnityEngine",
-                            "FtDSharp",
-                        }));
-
-                // Validate script doesn't use forbidden namespaces
-                var validationErrors = ForbiddenNamespaceValidator.GetInvalidUsages(compilation, syntaxTree);
-                if (validationErrors.Count > 0)
+                if (ScriptCompilationCache.TryGet(hash, out var cached))
                 {
-                    _lastError = "Forbidden namespace usage:\n" + string.Join("\n", validationErrors);
-                    _instance = null;
-                    _assembly = null;
-                    _hash = null;
-                    return (false, diagnosticsList.ToArray());
+                    ilBytes = cached!;
+                }
+                else
+                {
+                    var syntaxTree = CSharpSyntaxTree.ParseText(ScriptPrelude + code);
+
+                    var compilation = CSharpCompilation.Create(
+                        assemblyName: $"FtDSharpScript_{Guid.NewGuid():N}",
+                        syntaxTrees: new[] { syntaxTree },
+                        references: DefaultReferences,
+                        options: new CSharpCompilationOptions(
+                            OutputKind.DynamicallyLinkedLibrary,
+                            optimizationLevel: OptimizationLevel.Release,
+                            allowUnsafe: false,
+                            usings: new[]
+                            {
+                                "System",
+                                "System.Collections.Generic",
+                                "System.Linq",
+                                "UnityEngine",
+                                "FtDSharp",
+                            }));
+
+                    var validationErrors = ForbiddenNamespaceValidator.GetInvalidUsages(compilation, syntaxTree);
+                    if (validationErrors.Count > 0)
+                    {
+                        _lastError = "Forbidden namespace usage:\n" + string.Join("\n", validationErrors);
+                        _instance = null;
+                        _assembly = null;
+                        _hash = null;
+                        return (false, diagnosticsList.ToArray());
+                    }
+
+                    using var ms = new MemoryStream();
+                    EmitResult emitResult = compilation.Emit(ms);
+                    if (!emitResult.Success)
+                    {
+                        diagnosticsList.AddRange(emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+                        _lastError = string.Join("\n", diagnosticsList.Select(d => d.ToString()));
+                        _instance = null;
+                        _assembly = null;
+                        _hash = null;
+                        return (false, diagnosticsList.ToArray());
+                    }
+
+                    ilBytes = ms.ToArray();
+                    ScriptCompilationCache.Store(hash, ilBytes);
                 }
 
-                using var ms = new MemoryStream();
-                EmitResult emitResult = compilation.Emit(ms);
-                if (!emitResult.Success)
-                {
-                    // Return actual Roslyn diagnostics
-                    diagnosticsList.AddRange(emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
-                    _lastError = string.Join("\n", diagnosticsList.Select(d => d.ToString()));
-                    _instance = null;
-                    _assembly = null;
-                    _hash = null;
-                    return (false, diagnosticsList.ToArray());
-                }
-
-                ms.Seek(0, SeekOrigin.Begin);
-                _assembly = Assembly.Load(ms.ToArray());
+                _assembly = Assembly.Load(ilBytes);
                 var type = _assembly.GetTypes().FirstOrDefault(t => typeof(IFtDSharp).IsAssignableFrom(t));
                 if (type == null)
                 {
@@ -110,7 +119,7 @@ namespace FtDSharp
             }
         }
 
-        internal bool TryCompileAndActivate(string code, IScriptContext ctx, out (string Hash, TimeSpan CompileTime, Diagnostic[] Diagnostics, string? ErrorMessage) diagnostics)
+        internal bool TryCompileAndActivate(string code, IScriptContext? ctx, out (string Hash, TimeSpan CompileTime, Diagnostic[] Diagnostics, string? ErrorMessage) diagnostics)
         {
             var hash = ComputeHash(code);
 

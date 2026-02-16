@@ -92,7 +92,6 @@ namespace FtDSharp.Facades
             return _turretController.Value.TryFireAt(worldPosition);
         }
 
-        // Override Fire to fire all mounted weapons
         public override bool Fire()
         {
             return _turretController.Value.Fire();

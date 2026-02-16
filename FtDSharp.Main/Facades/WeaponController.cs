@@ -506,39 +506,18 @@ namespace FtDSharp
         #region Aiming
 
         /// <summary>
-        /// Aims all turrets and weapons in a single pass.
-        /// JustTheTopLevel ensures each item is aimed independently without affecting children.
+        /// Aims all turrets and weapons, then derives turret states from weapon results.
+        /// Turrets must be aimed first (rotation), then weapons (which depend on turret orientation).
+        /// Turret states are derived from their closest weapons because turret blocks themselves
+        /// don't report meaningful aim status through weapon-specific status counters.
         /// </summary>
         private AimResult AimAll()
         {
             bool isOnTarget = false, isBlocked = false, canAim = false;
 
-            // Aim turrets
             foreach (var turret in _turrets)
-            {
-                var result = turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
+                turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
 
-                float flightTime = 0f;
-                Vector3 aimPoint = Vector3.zero;
-                bool isTerrainBlocking = false;
-                if (turret.HasWeapons)
-                {
-                    foreach (var weapon in turret.ClosestWeapons!)
-                    {
-                        flightTime += weapon.FlightTime;
-                        aimPoint = weapon.AimPoint;
-                        isTerrainBlocking |= weapon.IsTerrainBlocking;
-                    }
-                    flightTime /= turret.ClosestWeapons.Count;
-                }
-                turret.Facade.SetTrackState(new TrackResult(result, flightTime, aimPoint, isTerrainBlocking, turret.Facade.IsReady));
-
-                isOnTarget |= result.IsOnTarget;
-                isBlocked |= result.IsBlocked;
-                canAim |= result.CanAim;
-            }
-
-            // Aim weapons
             foreach (var weapon in _weapons)
             {
                 var result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
@@ -550,28 +529,25 @@ namespace FtDSharp
                 weapon.Facade.SetTrackState(trackResult);
             }
 
+            var (tIsOnTarget, tIsBlocked, tCanAim) = DeriveTurretStates(includeTrackData: true);
+            isOnTarget |= tIsOnTarget;
+            isBlocked |= tIsBlocked;
+            canAim |= tCanAim;
+
             return new AimResult(isOnTarget, isBlocked, canAim);
         }
 
         /// <summary>
         /// Aims all items and propagates AimResult state (for AimAt calls without lead calculation).
+        /// Same phased approach as AimAll: turrets first for rotation, then weapons, then derive turret states.
         /// </summary>
         private AimResult AimAllAt()
         {
             bool isOnTarget = false, isBlocked = false, canAim = false;
 
-            // Aim turrets
             foreach (var turret in _turrets)
-            {
-                var result = turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
-                turret.Facade.SetAimState(result);
+                turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
 
-                isOnTarget |= result.IsOnTarget;
-                isBlocked |= result.IsBlocked;
-                canAim |= result.CanAim;
-            }
-
-            // Aim weapons
             foreach (var weapon in _weapons)
             {
                 var result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
@@ -582,7 +558,65 @@ namespace FtDSharp
                 canAim |= result.CanAim;
             }
 
+            var (tIsOnTarget, tIsBlocked, tCanAim) = DeriveTurretStates(includeTrackData: false);
+            isOnTarget |= tIsOnTarget;
+            isBlocked |= tIsBlocked;
+            canAim |= tCanAim;
+
             return new AimResult(isOnTarget, isBlocked, canAim);
+        }
+
+        /// <summary>
+        /// Derives turret aim/track states from their closest weapons' results.
+        /// Uses "any" semantics: turret.CanFire is true if ANY closest weapon can fire.
+        /// When includeTrackData is true, also aggregates flight time, aim point, and terrain blocking.
+        /// </summary>
+        private (bool isOnTarget, bool isBlocked, bool canAim) DeriveTurretStates(bool includeTrackData)
+        {
+            bool isOnTarget = false, isBlocked = false, canAim = false;
+
+            foreach (var turret in _turrets)
+            {
+                bool tOnTarget = false, tBlocked = false, tCanAim = false;
+                float flightTime = 0f;
+                Vector3 aimPoint = Vector3.zero;
+                bool isTerrainBlocking = false;
+                bool anyReady = false;
+
+                if (turret.HasWeapons)
+                {
+                    foreach (var w in turret.ClosestWeapons!)
+                    {
+                        tOnTarget |= w.Facade.OnTarget;
+                        tBlocked |= w.Facade.IsBlocked;
+                        tCanAim |= w.Facade.CanAim;
+
+                        if (includeTrackData)
+                        {
+                            flightTime += w.FlightTime;
+                            aimPoint = w.AimPoint;
+                            isTerrainBlocking |= w.IsTerrainBlocking;
+                            anyReady |= w.Facade.IsReady;
+                        }
+                    }
+
+                    if (includeTrackData)
+                        flightTime /= turret.ClosestWeapons.Count;
+                }
+
+                var turretAim = new AimResult(tOnTarget, tBlocked, tCanAim);
+
+                if (includeTrackData)
+                    turret.Facade.SetTrackState(new TrackResult(turretAim, flightTime, aimPoint, isTerrainBlocking, anyReady));
+                else
+                    turret.Facade.SetAimState(turretAim);
+
+                isOnTarget |= tOnTarget;
+                isBlocked |= tBlocked;
+                canAim |= tCanAim;
+            }
+
+            return (isOnTarget, isBlocked, canAim);
         }
 
         private TrackResult AggregateTrackResults(AimResult aimResult)

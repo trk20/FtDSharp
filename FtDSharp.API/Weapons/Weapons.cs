@@ -11,6 +11,7 @@ namespace FtDSharp
     {
         private static IReadOnlyList<IWeapon>? _lastAll;
         private static readonly Dictionary<WeaponType, IReadOnlyList<IWeapon>> _typeCache = new();
+        private static readonly Dictionary<Type, object> _interfaceCache = new();
 
         /// <summary>
         /// Gets all weapons on the current construct (excluding turrets).
@@ -28,59 +29,60 @@ namespace FtDSharp
         /// <summary>
         /// Gets all APS (Advanced Projectile System) weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> APS => GetByType(WeaponType.APS);
+        public static IReadOnlyList<IApsWeapon> APS => GetByInterface<IApsWeapon>();
 
         /// <summary>
         /// Gets all CRAM cannons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> CRAM => GetByType(WeaponType.CRAM);
+        public static IReadOnlyList<ICramWeapon> CRAM => GetByInterface<ICramWeapon>();
 
         /// <summary>
         /// Gets all laser weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> Lasers => GetByType(WeaponType.Laser);
+        public static IReadOnlyList<ILaserWeapon> Lasers => GetByInterface<ILaserWeapon>();
 
         /// <summary>
         /// Gets all plasma weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> Plasma => GetByType(WeaponType.Plasma);
+        public static IReadOnlyList<IPlasmaWeapon> Plasma => GetByInterface<IPlasmaWeapon>();
 
         /// <summary>
         /// Gets all particle cannons (PAC).
         /// </summary>
-        public static IReadOnlyList<IWeapon> ParticleCannons => GetByType(WeaponType.ParticleCannon);
+        public static IReadOnlyList<IParticleWeapon> ParticleCannons => GetByInterface<IParticleWeapon>();
 
         /// <summary>
         /// Gets all flamers.
         /// </summary>
-        public static IReadOnlyList<IWeapon> Flamers => GetByType(WeaponType.Flamer);
+        public static IReadOnlyList<IFlamerWeapon> Flamers => GetByInterface<IFlamerWeapon>();
 
         /// <summary>
-        /// Gets all simple weapons (WWII cannons).
+        /// Gets all simple weapons.
         /// </summary>
-        public static IReadOnlyList<IWeapon> SimpleWeapons => GetByType(WeaponType.SimpleWeapon);
+        public static IReadOnlyList<ISimpleWeapon> SimpleWeapons => GetByInterface<ISimpleWeapon>();
 
         /// <summary>
         /// Gets all missile controllers.
         /// </summary>
-        public static IReadOnlyList<IWeapon> MissileControllers => GetByType(WeaponType.Missile);
+        public static IReadOnlyList<IMissileWeapon> MissileControllers => GetByInterface<IMissileWeapon>();
 
-        private static IReadOnlyList<IWeapon> GetByType(WeaponType type)
+        private static IReadOnlyList<T> GetByInterface<T>() where T : class, IWeapon
         {
             var all = All;
             if (!ReferenceEquals(all, _lastAll))
             {
                 _lastAll = all;
                 _typeCache.Clear();
+                _interfaceCache.Clear();
             }
 
-            if (!_typeCache.TryGetValue(type, out var cached))
-            {
-                cached = all.Where(w => w.WeaponType == type).ToList();
-                _typeCache[type] = cached;
-            }
+            var key = typeof(T);
+            if (_interfaceCache.TryGetValue(key, out var cached))
+                return (IReadOnlyList<T>)cached;
 
-            return cached;
+            var result = all.OfType<T>().ToList();
+            _interfaceCache[key] = result;
+            return result;
         }
     }
 }

@@ -7,21 +7,21 @@ using UnityEngine;
 namespace FtDSharp.Facades
 {
 {{~ if is_turret ~}}
-    internal class {{ class_name }}Facade : TurretFacade, {{ all_interfaces | array.join ", " }}
+    internal partial class {{ class_name }}Facade : TurretFacade, {{ all_interfaces | array.join ", " }}
     {
         public {{ class_name }}Facade({{ game_type_full_name }} block, AllConstruct allConstruct) 
             : base((Turrets)(object)block, allConstruct)
         {
         }
 {{~ else if is_weapon ~}}
-    internal class {{ class_name }}Facade : WeaponFacade, {{ all_interfaces | array.join ", " }}
+    internal partial class {{ class_name }}Facade : WeaponFacade, {{ all_interfaces | array.join ", " }}
     {
         public {{ class_name }}Facade({{ game_type_full_name }} block, AllConstruct allConstruct) 
             : base(block, allConstruct)
         {
         }
 {{~ else ~}}
-    internal class {{ class_name }}Facade : BlockFacadeBase, {{ all_interfaces | array.join ", " }}
+    internal partial class {{ class_name }}Facade : BlockFacadeBase, {{ all_interfaces | array.join ", " }}
     {
         private readonly {{ game_type_full_name }} _block;
 

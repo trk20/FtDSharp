@@ -80,6 +80,8 @@ namespace FtDSharp.Facades
                 // Fallback for weapons not in the generated factory
                 if (weapon is Turrets turret)
                     return new TurretFacade(turret, allConstruct);
+                if (weapon is WorldWarCannonBase swc)
+                    return new SimpleWeaponFacade(swc, allConstruct);
                 return new WeaponFacade(weapon, allConstruct);
             });
         }

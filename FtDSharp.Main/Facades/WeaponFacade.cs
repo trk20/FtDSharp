@@ -255,7 +255,11 @@ namespace FtDSharp.Facades
             }
             if (_weapon is FlamerMain flamer)
             {
-                return flamer.GameWorldRotation * flamer.FiringArc.LastGoodLocalDirection; // I can't find a better way for flamers
+                return flamer.GameWorldRotation * flamer.FiringArc.LastGoodLocalDirection;
+            }
+            if (_weapon is WorldWarCannonBase wwCannon)
+            {
+                return wwCannon.GetFireDirection();
             }
             return _weapon.GameWorldRotation * Vector3.forward;
         }

@@ -1,0 +1,71 @@
+name: Cache Game DLLs
+
+# Caches managed DLLs for use by the Release workflow.
+# Automatically searches for From The Depths installation and copies DLLs.
+#
+# Usage:
+#   1. Run this workflow manually (Actions → Cache Game DLLs → Run workflow)
+#   2. The workflow will find the game installation and cache the DLLs
+#   3. The DLLs will be cached for use by the Release workflow
+#
+# The cache key is 'ftd-managed'. To update after a game version change,
+# delete the old cache entry first (Settings → Actions → Caches), then re-run.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cache:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find and copy game DLLs
+        run: |
+          search_paths=(
+            "/c/Program Files (x86)/Steam/steamapps/common/From The Depths/From_The_Depths_Data/Managed"
+            "/c/Program Files/Steam/steamapps/common/From The Depths/From_The_Depths_Data/Managed"
+            "$HOME/Documents/From The Depths/From_The_Depths_Data/Managed"
+            "$HOME/.steam/steam/steamapps/common/From The Depths/From_The_Depths_Data/Managed"
+            "$HOME/.local/share/Steam/steamapps/common/From The Depths/From_The_Depths_Data/Managed"
+          )
+
+          managed_path=""
+          for path in "${search_paths[@]}"; do
+            if [ -d "$path" ] && [ -n "$(ls "$path"/*.dll 2>/dev/null)" ]; then
+              managed_path="$path"
+              echo "Found game installation at: $managed_path"
+              break
+            fi
+          done
+
+          if [ -z "$managed_path" ]; then
+            echo "::error::Could not find From The Depths installation."
+            echo "::error::Searched locations:"
+            for path in "${search_paths[@]}"; do
+              echo "::error::  - $path"
+            done
+            exit 1
+          fi
+
+          # Create ftd-managed directory if it doesn't exist
+          mkdir -p ftd-managed
+
+          # Copy DLLs
+          cp "$managed_path"/*.dll ftd-managed/
+
+          dll_count=$(ls ftd-managed/*.dll 2>/dev/null | wc -l)
+          if [ "$dll_count" -eq 0 ]; then
+            echo "::error::No DLLs found after copy operation."
+            exit 1
+          fi
+
+          echo "Successfully copied $dll_count DLLs to ftd-managed/"
+
+      - name: Save game DLLs to cache
+        uses: actions/cache/save@v4
+        with:
+          path: ftd-managed
+          key: ftd-managed

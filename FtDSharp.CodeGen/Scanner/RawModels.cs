@@ -5,7 +5,7 @@ namespace FtDSharp.CodeGen.Scanner;
 public class RawBlockInfo
 {
     public Type GameType { get; set; } = typeof(object);
-    public List<RawPropertyInfo> Properties { get; set; } = new();
+    public List<RawPropertyInfo> Properties { get; set; } = [];
 }
 
 public class RawPropertyInfo

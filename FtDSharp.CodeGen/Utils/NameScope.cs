@@ -3,7 +3,7 @@ namespace FtDSharp.CodeGen.Utils;
 public class NameScope
 {
     private readonly Dictionary<string, int> _usedNames = new(StringComparer.OrdinalIgnoreCase);
-    private readonly List<string> _collisions = new();
+    private readonly List<string> _collisions = [];
 
     public IReadOnlyList<string> Collisions => _collisions;
     public bool IsTaken(string name) => _usedNames.ContainsKey(name);

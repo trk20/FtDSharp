@@ -1,5 +1,4 @@
 using System;
-using BrilliantSkies.Core.Types;
 using BrilliantSkies.Core.Help;
 using UnityEngine;
 
@@ -9,7 +8,7 @@ namespace FtDSharp.Facades
     /// Facade wrapping a MainConstruct. Provides read-only access to basic construct information.
     /// Serves as base class for MainConstructFacade which adds control capabilities.
     /// </summary>
-    public class FriendlyConstructFacade : IFriendlyConstruct
+    internal class FriendlyConstructFacade : IFriendlyConstruct
     {
         protected readonly MainConstruct _construct;
         private readonly Lazy<IFleet> _fleet;
@@ -24,6 +23,7 @@ namespace FtDSharp.Facades
         public string Name => _construct.GetBlueprintName();
         public Vector3 Position => _construct.myTransform.position;
         public Vector3 Velocity => _construct.PartPhysicsRestricted.iVelocities.VelocityVector;
+        public Vector3 Acceleration => Vector3.zero; // fix later, not available directly
         public float Volume => _construct.AllBasics.GetVolumeOfAloveBlocksIncludingSubConstructable();
         public int AliveBlockCount => _construct.AllBasics.GetNumberAliveBlocksIncludingSubConstructables();
         public int BlockCount => _construct.AllBasics.GetNumberBlocksIncludingSubConstructables();

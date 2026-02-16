@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FtDSharp
 {
-    /// <summary>Interface for {{ game_type_name }} block type.</summary>
+    /// <summary>Interface for {{ class_name }} block type.</summary>
     public interface {{ interface_name }} : {{ inheritance | array.join ", " }}
     {
 {{~ for prop in properties ~}}

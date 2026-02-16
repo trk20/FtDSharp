@@ -29,7 +29,9 @@ namespace FtDSharp.Facades
                     return null;
 
                 var primaryTarget = targetManager.GetPrimaryTarget();
-                return primaryTarget != null ? new TargetFacade(primaryTarget) : null;
+                if (primaryTarget == null || primaryTarget.IsNull())
+                    return null;
+                return new TargetFacade(primaryTarget);
             }
         }
 
@@ -48,7 +50,7 @@ namespace FtDSharp.Facades
                 var result = new List<ITarget>(prioritized.Count);
                 foreach (var targetObj in prioritized)
                 {
-                    if (targetObj?.C != null)
+                    if (targetObj != null && !targetObj.IsNull())
                     {
                         result.Add(new TargetFacade(targetObj));
                     }

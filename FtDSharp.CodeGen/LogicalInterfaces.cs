@@ -82,15 +82,18 @@ public static class LogicalInterfaces
         // Weapon base properties - named IWeaponProperties to avoid conflict with manual IWeapon interface
         new LogicalInterfaceDefinition
         {
-            InterfaceName = "IWeaponProperties",
-            Description = "Common weapon properties.",
+            InterfaceName = "IConstructableWeaponBlock",
+            Description = "Weapon base properties.",
             PropertyNames =
             [
+                // Note: SpeedReader (ProjectileSpeed) is omitted because IWeapon already provides it
+                "HasFiredReader",
                 nameof(WeaponData.RequiredAccuracy),
                 nameof(WeaponData.FiringDelay),
                 nameof(WeaponData.SavedReloadTime),
                 nameof(WeaponData.MinResourcePercentBeforeFiring),
                 nameof(WeaponData.FireNow),
+                nameof(WeaponData.WeaponSlotMask),
                 nameof(WeaponFiringArc.LimitationsEnabled),
                 nameof(WeaponFiringArc.IsRelativeToParent),
                 nameof(WeaponFiringArc.FlipAz),

@@ -9,10 +9,14 @@ namespace FtDSharp.Facades
 {
     internal static class BlockFactory
     {
-        private static readonly Dictionary<Type, Func<Block, IBlock>> _factories = new()
+        private static readonly Dictionary<Type, Func<Block, AllConstruct?, IBlock?>> _factories = new()
         {
 {{~ for block in blocks ~}}
-            { typeof({{ block.game_type_full_name }}), b => new {{ block.class_name }}Facade(({{ block.game_type_full_name }})b) },
+{{~ if block.is_weapon || block.is_turret ~}}
+            { typeof({{ block.game_type_full_name }}), (b, ac) => ac != null ? FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(b, () => new {{ block.class_name }}Facade(({{ block.game_type_full_name }})b, ac)) : null },
+{{~ else ~}}
+            { typeof({{ block.game_type_full_name }}), (b, ac) => FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(b, () => new {{ block.class_name }}Facade(({{ block.game_type_full_name }})b)) },
+{{~ end ~}}
 {{~ end ~}}
         };
 
@@ -21,11 +25,12 @@ namespace FtDSharp.Facades
         {
             if (block == null) return null;
             var blockType = block.GetType();
+            var allConstruct = block.MainConstruct as AllConstruct;
             
             // Try exact match first
             if (_factories.TryGetValue(blockType, out var factory))
             {
-                return factory(block);
+                return factory(block, allConstruct);
             }
             
             // Try to find a parent type that matches
@@ -33,7 +38,7 @@ namespace FtDSharp.Facades
             {
                 if (kvp.Key.IsAssignableFrom(blockType))
                 {
-                    return kvp.Value(block);
+                    return kvp.Value(block, allConstruct);
                 }
             }
             

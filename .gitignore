@@ -14,13 +14,19 @@ obj/
 
 # Visual Studio / VS Code
 .vs/
-copilot-instructions.md
+.github/
+.serena/
+!CODEOWNERS
+!.github/design-objectives.md
 .vscode/
 *.user
 *.suo
 
 # FtD DLLs
 ftd-managed/*
+
+# FtD Reference Assemblies
+FtD_Reference/**
 
 # NuGet packages
 packages/

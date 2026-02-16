@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using BrilliantSkies.Ftd.Missiles;
 using GameMissileSize = BrilliantSkies.Ftd.Missiles.MissileSize;
@@ -7,16 +8,30 @@ using BrilliantSkies.Core.Returns.Positions;
 using BrilliantSkies.Ftd.Missiles.Blueprints;
 using System.Linq;
 using BrilliantSkies.Ftd.Missiles.Components;
+using BrilliantSkies.Core.Particles;
+using BrilliantSkies.Core.Logger;
 
 namespace FtDSharp.Facades
 {
-    public class MissileFacade : IMissile
+    // Position holder to avoid closure allocations in AimAt
+    internal sealed class MutableAimPoint
+    {
+        public Vector3 Value;
+    }
+
+    internal sealed class MissileFacade : IMissile
     {
         private readonly Missile _missile;
+        private MutableAimPoint? _cachedAimPoint;
+        private MissileTarget? _cachedTarget;
+        private List<IMissilePart>? _partsCache;
 
         public MissileFacade(Missile missile)
         {
             _missile = missile;
+            Trail = new MissileTrailImpl(this);
+            Flame = new MissileFlameImpl(this);
+            EngineLight = new MissileEngineLightImpl(this);
         }
 
         public int Id => _missile.UniqueId;
@@ -38,11 +53,25 @@ namespace FtDSharp.Facades
         public Vector3 Velocity => _missile.Velocity;
         public Quaternion Rotation => Quaternion.LookRotation(_missile.Forward, Vector3.up); // approx
         public Vector3 Forward => _missile.Forward;
-        public IMissileLauncher Launcher => null!; // todo: reference launcher
+        /// <summary>Launcher that fired this missile - NOT CURRENTLY IMPLEMENTED, will return null. </summary>
+        public IMissileLauncher? Launcher => null; // todo: reference launcher
 
-        public List<IMissilePart> Parts => _missile.Blueprint.Components
-            .Select(part => (IMissilePart)new MissilePartFacade(part))
-            .ToList();
+        public List<IMissilePart> Parts =>
+            _partsCache ??= _missile.Blueprint.Components
+                .Select(part => MissilePartFactory.CreateFacade(part)!)
+                .ToList();
+
+        /// <inheritdoc />
+        public IEnumerable<T> GetParts<T>() where T : class, IMissilePart
+            => Parts.OfType<T>();
+
+        /// <inheritdoc />
+        public T? GetPart<T>() where T : class, IMissilePart
+            => Parts.OfType<T>().FirstOrDefault();
+
+        /// <inheritdoc />
+        public bool HasPart<T>() where T : class, IMissilePart
+            => Parts.OfType<T>().Any();
 
         public void Detonate()
         {
@@ -55,9 +84,18 @@ namespace FtDSharp.Facades
             var error = receiver.ErrorSeed;
             // todo: figure out how to apply error without being easily avoided
             // stability/detection error already applied to target position, need something for ECM/GPP error?
-            var posReturn = new PositionReturnPosition(() => aimPoint + error);
-            var target = new MissileTarget("LuaScript", posReturn, MissileTargetPriority.GuidancePoint);
-            _missile.TargetManager.SetTarget(target, MissileTargetPriorityUse.ApplyIfHigherOrSamePriority);
+
+            // Reuse target and position objects to avoid allocations
+            // The closure captures _cachedAimPoint once; we update its Value each call
+            if (_cachedAimPoint == null)
+            {
+                _cachedAimPoint = new MutableAimPoint();
+                var posReturn = new PositionReturnPosition(() => _cachedAimPoint.Value);
+                _cachedTarget = new MissileTarget("LuaScript", posReturn, MissileTargetPriority.GuidancePoint);
+            }
+
+            _cachedAimPoint.Value = aimPoint + error;
+            _missile.TargetManager.SetTarget(_cachedTarget!, MissileTargetPriorityUse.ApplyIfHigherOrSamePriority);
         }
 
         private float GetThrust()
@@ -98,16 +136,107 @@ namespace FtDSharp.Facades
             }
         }
 
-    }
+        // ===== Propulsion Visual Control =====
+        // Uses reflection to access the protected _effectSystem field on MissilePropulsion
 
-    public class MissilePartFacade : IMissilePart
-    {
-        private readonly MissileComponent _component;
-        public string PartType => _component.Name;
+        private static readonly FieldInfo? _effectSystemField = typeof(MissilePropulsion)
+            .GetField("_effectSystem", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        public MissilePartFacade(MissileComponent component)
+        internal MissilePropulsion? GetActivePropulsion()
         {
-            _component = component;
+            if (_missile.Blueprint.IsMissile && !_missile.Blueprint.Thruster.IsUnderWater)
+                return _missile.Blueprint.Thruster;
+            if (_missile.Blueprint.IsTorpedo && _missile.Blueprint.Propeller.IsUnderWater)
+                return _missile.Blueprint.Propeller;
+            return null;
         }
+
+        internal AdvancedJetEffects? GetAdvancedJetEffects()
+        {
+            var propulsion = GetActivePropulsion();
+            if (propulsion == null || _effectSystemField == null)
+                return null;
+            return _effectSystemField.GetValue(propulsion) as AdvancedJetEffects;
+        }
+
+        /// <inheritdoc />
+        public IMissileTrail Trail { get; }
+        /// <inheritdoc />
+        public IMissileFlame Flame { get; }
+        /// <inheritdoc />
+        public IMissileEngineLight EngineLight { get; }
+
+        internal class MissileTrailImpl : IMissileTrail
+        {
+            private readonly MissileFacade _parent;
+            public MissileTrailImpl(MissileFacade parent) => _parent = parent;
+
+            public TrailType Variant => _parent.GetActivePropulsion()?.IsIonParameter.Us > 0.5f
+                ? TrailType.Ion : TrailType.Smoke;
+
+            public Color Color
+            {
+                set
+                {
+                    if (Variant == TrailType.Ion)
+                    {
+                        _parent.GetAdvancedJetEffects()?.SetTrailColor(value);
+                    }
+                    else
+                    {
+                        var propulsion = _parent.GetActivePropulsion();
+                        if (propulsion != null)
+                        {
+                            propulsion.parameters.SmokeColor.Locked = false;
+                            propulsion.parameters.SmokeColor.Us = value;
+                        }
+                    }
+                }
+            }
+
+            public bool Enabled
+            {
+                set
+                {
+                    if (Variant == TrailType.Ion)
+                        _parent.GetAdvancedJetEffects()?.EnableTrail(value);
+                    else
+                        _parent.GetAdvancedJetEffects()?.EnableSmoke(value);
+                }
+            }
+        }
+
+        internal class MissileFlameImpl : IMissileFlame
+        {
+            private readonly MissileFacade _parent;
+            public MissileFlameImpl(MissileFacade parent) => _parent = parent;
+
+            public Color Color
+            {
+                set => _parent.GetAdvancedJetEffects()?.SetFlameColor(value);
+            }
+
+            public bool Enabled
+            {
+                set => _parent.GetAdvancedJetEffects()?.EnableFlame(value);
+            }
+        }
+
+        internal class MissileEngineLightImpl : IMissileEngineLight
+        {
+            private readonly MissileFacade _parent;
+            public MissileEngineLightImpl(MissileFacade parent) => _parent = parent;
+
+            public Color Color
+            {
+                set => _parent.GetAdvancedJetEffects()?.SetLightColorOnly(value);
+            }
+
+            public bool Enabled
+            {
+                set => _parent.GetAdvancedJetEffects()?.EnableLight(value);
+            }
+        }
+
     }
 }

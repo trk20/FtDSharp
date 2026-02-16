@@ -10,7 +10,7 @@ Eventually, C# scripting should present a complete superset of things you can do
 
 ### Ease of use and intuitiveness
 
-The mod should, when possible, make it easier for a player to write scripts. This includes how things are named, structured, and exposed - for example, target information being accessible as a flat list instead of iterating over target indices for an AI and needing a getter. In the general case, it should attempt to follow the principle of least surprise - a component of a system should behave in a way that most users will expect it to behave, and therefore not astonish or surprise users.
+The mod should, when possible, make it easier for a player to write scripts. This includes how things are named, structured, and exposed - for example, target information being accessible as a flat list instead of iterating over target indices for an AI and needing a getter. In the general case, it should attempt to follow the principle of least surprise - a component of a system should behave in a way that most users will expect it to behave, and therefore not astonish or surprise users. This is the core principle behind the design of the API, and should be followed as closely as possible, even if it may require more work to implement.
 
 Things that are currently indirectly possible with Lua but unintuitive (eg requiring calculating a target's block count from the AI priority) should be instead readily accessible (eg as a property of the target).
 

@@ -6,41 +6,32 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FtDSharp.Facades;
+using FtDSharp.Helpers;
 
 namespace FtDSharp
 {
-    /// <summary>Per-frame lazy cache that resets automatically each tick.</summary>
-    internal sealed class FrameCache<T>
+    /// <summary>Static accessor for blocks on the current construct. Caches results with count-based invalidation.</summary>
+    public static class Blocks
     {
-        private readonly Func<T> _factory;
-        private long _frame = -1;
-        private T? _value;
+        private static IReadOnlyList<IBlock>? cachedAll;
+        private static int lastKnownBlockCount = -1;
 
-        public FrameCache(Func<T> factory) => _factory = factory;
-
-        public T Value
+        /// <summary>Get all blocks on the main construct (including subconstructs).</summary>
+        public static IReadOnlyList<IBlock> All
         {
             get
             {
-                var currentFrame = Game.TicksSinceStart;
-                if (_frame != currentFrame)
-                {
-                    _frame = currentFrame;
-                    _value = _factory();
-                }
-                return _value!;
+                var construct = ScriptApi.Context?.RawAllConstruct;
+                if (construct == null) return Array.Empty<IBlock>();
+
+                var currentCount = construct.AllBasicsRestricted?.AliveAndDead?.Blocks?.Count ?? 0;
+                if (cachedAll != null && currentCount == lastKnownBlockCount)
+                    return cachedAll;
+
+                lastKnownBlockCount = currentCount;
+                return cachedAll = (ScriptApi.Context?.Self?.GetAllBlocks() ?? Enumerable.Empty<IBlock>()).ToList();
             }
         }
-    }
-
-    /// <summary>Static accessor for blocks on the current construct. Caches results per script update.</summary>
-    public static class Blocks
-    {
-        private static readonly FrameCache<IReadOnlyList<IBlock>> _all = new(() =>
-            (ScriptApi.Context?.Self?.GetAllBlocks() ?? Enumerable.Empty<IBlock>()).ToList());
-
-        /// <summary>Get all blocks on the main construct (including subconstructs).</summary>
-        public static IReadOnlyList<IBlock> All => _all.Value;
 
         /// <summary>Get all blocks of a specific type.</summary>
         public static IEnumerable<T> OfType<T>() where T : IBlock => All.OfType<T>();
@@ -48,35 +39,61 @@ namespace FtDSharp
         /// <summary>Get a block by its unique ID.</summary>
         public static IBlock? ById(int uniqueId) => All.FirstOrDefault(b => b.UniqueId == uniqueId);
 
+        /// <summary>Get a typed block by its unique ID. Returns null if not found or wrong type.</summary>
+        public static T? ById<T>(int uniqueId) where T : class, IBlock => All.OfType<T>().FirstOrDefault(b => b.UniqueId == uniqueId);
+
+        /// <summary>Forces cache invalidation on next access. Called when switching constructs. For framework use only.</summary>
+        public static void InvalidateCache()
+        {
+            cachedAll = null;
+            lastKnownBlockCount = -1;
+        }
+
 {{~ for block in blocks ~}}
-{{~ if block.has_store && !block.is_interface_store ~}}
+{{~ if block.has_store && !block.is_interface_store && !block.requires_type_filter ~}}
         private static readonly FrameCache<IReadOnlyList<{{ block.interface_name }}>> {{ block.field_name }} = new(() =>
         {
             var store = ScriptApi.Context?.BlockTypeStorage?.{{ block.store_property_name }};
             if (store?.Blocks == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ if block.is_weapon || block.is_turret ~}}
+            var allConstruct = ScriptApi.Context?.RawAllConstruct;
+            if (allConstruct == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ end ~}}
             var result = new List<{{ block.interface_name }}>(store.Blocks.Count);
             foreach (var block in store.Blocks)
             {
-                if (block != null) result.Add(new {{ block.class_name }}Facade(block));
+{{~ if block.is_weapon || block.is_turret ~}}
+                if (block != null && block.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block, allConstruct)));
+{{~ else ~}}
+                if (block != null && block.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(block, () => new {{ block.class_name }}Facade(block)));
+{{~ end ~}}
             }
             return result;
         });
-{{~ else if block.has_store && block.is_interface_store ~}}
+{{~ else if block.has_store && (block.is_interface_store || block.requires_type_filter) ~}}
         private static readonly FrameCache<IReadOnlyList<{{ block.interface_name }}>> {{ block.field_name }} = new(() =>
         {
             var store = ScriptApi.Context?.BlockTypeStorage?.{{ block.store_property_name }};
             if (store?.Blocks == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ if block.is_weapon || block.is_turret ~}}
+            var allConstruct = ScriptApi.Context?.RawAllConstruct;
+            if (allConstruct == null) return Array.Empty<{{ block.interface_name }}>();
+{{~ end ~}}
             var result = new List<{{ block.interface_name }}>();
             foreach (var block in store.Blocks)
             {
-                if (block is {{ block.game_type_full_name }} concrete) result.Add(new {{ block.class_name }}Facade(concrete));
+{{~ if block.is_weapon || block.is_turret ~}}
+                if (block is {{ block.game_type_full_name }} concrete && concrete.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete, allConstruct)));
+{{~ else ~}}
+                if (block is {{ block.game_type_full_name }} concrete && concrete.IsAlive) result.Add(FacadeCache.GetOrCreate<{{ block.class_name }}Facade>(concrete, () => new {{ block.class_name }}Facade(concrete)));
+{{~ end ~}}
             }
             return result;
         });
 {{~ else ~}}
         private static readonly FrameCache<IReadOnlyList<{{ block.interface_name }}>> {{ block.field_name }} = new(() => All.OfType<{{ block.interface_name }}>().ToList());
 {{~ end ~}}
-        /// <summary>Get all {{ block.class_name }} blocks (cached per update).</summary>
+        /// <summary>Get all {{ block.class_name }} blocks.</summary>
         public static IReadOnlyList<{{ block.interface_name }}> {{ block.plural_name }} => {{ block.field_name }}.Value;
 
 {{~ end ~}}

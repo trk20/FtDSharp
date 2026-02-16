@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using BrilliantSkies.Modding;
+using BrilliantSkies.Profiling;
 using HarmonyLib;
 
 namespace FtDSharp
@@ -18,6 +19,9 @@ namespace FtDSharp
 			new Harmony("FtDSharp").PatchAll();
 			ModInfo.ModVersion = version;
 			ModInfo.OnLoad();
+
+			// Register profiler 
+			Entry.AddModule(AbstractModule<FtDSharpProfiler>.Instance);
 		}
 
 		public bool AfterAllPluginsLoaded() => true;

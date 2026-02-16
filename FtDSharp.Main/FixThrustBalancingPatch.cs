@@ -25,19 +25,16 @@ namespace FtDSharp
             if (propBlock == null)
                 return;
 
-            float topSpeed = propBlock.TopSpeed;
-            if (float.IsInfinity(topSpeed))
+            if (float.IsInfinity(propBlock.TopSpeed))
                 return;
 
             IMainConstructBlock mainConstruct = propBlock.MainConstruct;
             if (mainConstruct == null)
                 return;
 
-            Vector3 localDirection = user.LocalInHullPropulsionActualForwards;
+            Vector3 worldThrustDirection = mainConstruct.SafeLocalDirectionToGlobalDirection(user.LocalInHullPropulsionActualForwards);
 
-            Vector3 worldThrustDirection = mainConstruct.SafeLocalDirectionToGlobalDirection(localDirection);
-
-            float speedFactor = GetThrustScaleForSpeed(mainConstruct, worldThrustDirection, topSpeed);
+            float speedFactor = GetThrustScaleForSpeed(mainConstruct, worldThrustDirection, propBlock.TopSpeed);
 
             __result *= speedFactor;
         }

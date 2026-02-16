@@ -20,8 +20,9 @@ namespace FtDSharp
 			ModInfo.ModVersion = version;
 			ModInfo.OnLoad();
 
-			// Register profiler 
 			Entry.AddModule(AbstractModule<FtDSharpProfiler>.Instance);
+
+			ScriptCompilationCache.Warmup();
 		}
 
 		public bool AfterAllPluginsLoaded() => true;

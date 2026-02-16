@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.2.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore game DLLs from cache
+        id: cache-dlls
+        uses: actions/cache/restore@v4
+        with:
+          path: ftd-managed
+          key: ftd-managed
+
+      - name: Verify game DLLs exist
+        if: steps.cache-dlls.outputs.cache-hit != 'true'
+        run: |
+          echo "::error::Game DLLs not found in cache."
+          echo "Push the ftd-managed DLLs to cache from a local runner or self-hosted workflow first."
+          echo "See .github/workflows/cache-game-dlls.yml"
+          exit 1
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Generate API bindings
+        run: dotnet run --project FtDSharp.CodeGen
+
+      - name: Build
+        run: dotnet build FtDSharp.csproj -c Release
+
+      - name: Update version in plugin.json
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' plugin.json > plugin.tmp && mv plugin.tmp plugin.json
+
+      - name: Stage release artifacts
+        run: |
+          mkdir -p dist/FtDSharp/TipOfTheDay
+          mkdir -p dist/FtDSharp/ExampleScripts
+
+          # Copy DLLs listed in plugin.json
+          for dll in $(jq -r '.filename' plugin.json | tr ',' '\n'); do
+            cp "$dll" dist/FtDSharp/
+          done
+
+          # Copy metadata and docs
+          cp header.header dist/FtDSharp/
+          cp plugin.json dist/FtDSharp/
+          cp LICENSE.md dist/FtDSharp/
+          cp README.md dist/FtDSharp/
+
+          # Copy TipOfTheDay
+          cp -r TipOfTheDay/* dist/FtDSharp/TipOfTheDay/ 2>/dev/null || true
+
+          # Copy example scripts
+          cp ExampleScripts/*.cs dist/FtDSharp/ExampleScripts/ 2>/dev/null || true
+
+          # Create clone helper script
+          cat > dist/FtDSharp/clone-source.sh << 'CLONEOF'
+          #!/bin/bash
+          git clone https://github.com/trk20/FtDSharp.git
+          echo "FtDSharp source cloned. See README.md for build instructions."
+          CLONEOF
+          chmod +x dist/FtDSharp/clone-source.sh
+
+      - name: Create release archive
+        run: cd dist && zip -r ../FtDSharp-v${{ inputs.version }}.zip FtDSharp/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: FtDSharp v${{ inputs.version }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          files: FtDSharp-v${{ inputs.version }}.zip

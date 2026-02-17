@@ -170,7 +170,7 @@ public class MissileGuidance : IFtDSharp
 }
 ```
 
-No index loops, manual vector math, or annoying boilerplate.
+No index loops or annoying boilerplate.
 
 ### PID Control: Lua vs C#
 

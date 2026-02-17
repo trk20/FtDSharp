@@ -16,6 +16,7 @@ This mod is currently in early alpha. Although it already has a superset of the 
 - **200+ source-generated block accessors**: Typed interfaces for most block types in the game, like a GBG/GBS on steroids
 - **Built-in helpers**: PID helper class, WeaponController for custom weapon groups
 - **Extra Features**: Did I hear script controlled missile trails/smoke? Inbuilt vector drawing for debugging? Yes and yes (with more to come).
+- **GitHub Wiki**: A full (well, not yet) API reference and example gallery on the [GitHub wiki](https://github.com/trk20/FtDSharp/wiki), the primary documentation source for the mod (alongside IntelliSense descriptions)
 - **Significantly faster than Lua**: Roslyn-compiled C# runs faster than interpreted Lua, especially for complex scripts, and the API is designed to minimize allocations and expensive operations to keep performance impact low. Your missile guidance scripts are now less of a concern than the missiles themselves!
 - **Security sandbox**: Reflection, file I/O, and network access are intentionally blocked to mitigate malicious scripts. This will be iteratively improved based on user feedback/as needed.
 - **In-game compile and runtime error reporting**: Roslyn diagnostics with line numbers shown in the Lua box log (no more cryptic Lua errors!)
@@ -27,7 +28,6 @@ _Note: platform support is untested but should work anywhere the game runs aside
 
 ## Future Improvements To Come
 
-- **GitHub Wiki**: A full API reference and example gallery on the GitHub wiki, which will be the primary documentation source for the mod
 - **In-box documentation**: Replacement for the obsolete Lua API docs in the Help tab, auto-generated from the wiki
 - **Steam Workshop release**: Once the mod is (relatively) stable and well-documented, it will be released on the Steam Workshop for easier installation and updates
 - **More Bespoke APIs**: Slow replacement of commonly used source-generated APIs with hand-crafted ones that are more intuitive, additional helpers for common patterns, behaviour overrides, and more

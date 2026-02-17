@@ -344,12 +344,14 @@ public class SimpleWeaponControl : IFtDSharp
 ## Error Handling
 
 **Lua**: Errors are cryptic, usually unhelpful, and only show happen at runtime when the offending code is executed:
-![alt text](image.png)
+<img width="538" height="98" alt="IMG_20260217_074224" src="https://github.com/user-attachments/assets/dc9cefd0-5a8f-4376-9ef4-a769c8d2f990" />
+
 
 **FtDSharp**: Clear Roslyn diagnostics with line numbers, shown in the Lua box log:
-![alt text](image-1.png)
+<img width="953" height="187" alt="546665243-96ea2b2b-e137-4030-9776-d47d13ced1c6" src="https://github.com/user-attachments/assets/cc22068b-7457-41b8-91be-ebd8cb938ce2" />
 
-##### Note: the pretty UI shown here is part of jalansia's [AtsuLuaEditor mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3405611847), but FtDSharp's error reporting works with or without it.
+
+##### Note: the pretty UI shown here is part of jalanisa's [AtsuLuaEditor mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3405611847), but FtDSharp's error reporting works with or without it.
 
 ---
 

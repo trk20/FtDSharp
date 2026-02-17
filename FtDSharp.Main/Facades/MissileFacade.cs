@@ -35,7 +35,6 @@ namespace FtDSharp.Facades
         }
 
         public int Id => _missile.UniqueId;
-        public bool Valid => _missile != null && _missile.IsAlive();
         public MissileSize Size => _missile.Blueprint.Size switch
         {
             var size when size == GameMissileSize.S => MissileSize.SMALL,

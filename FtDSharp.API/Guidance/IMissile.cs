@@ -12,8 +12,6 @@ namespace FtDSharp
         /// <summary>Unique missile ID.</summary>
         int Id { get; }
         /// <summary>Whether the missile is still valid (not detonated or destroyed).</summary>
-        bool Valid { get; }
-        /// <summary>Missile size.</summary>
         MissileSize Size { get; }
         /// <summary>Missile length in meters.</summary>
         float Length { get; }

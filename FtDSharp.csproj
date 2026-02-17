@@ -12,6 +12,10 @@
     <None Remove="FtDSharp.CodeGen\**" />
     <Compile Remove="FtD_Reference\**" />
     <None Remove="FtD_Reference\**" />
+    <Compile Remove="dist\**" />
+    <None Remove="dist\**" />
+    <Compile Remove="ScriptProject\**" />
+    <None Remove="ScriptProject\**" />
   </ItemGroup>
 
   <ItemGroup>

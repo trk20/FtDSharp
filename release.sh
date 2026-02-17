@@ -86,6 +86,7 @@ echo "[4/5] Staging release artifacts..."
 rm -rf dist
 mkdir -p dist/FtDSharp/TipOfTheDay
 mkdir -p dist/FtDSharp/ExampleScripts
+mkdir -p dist/FtDSharp/ScriptProject
 
 echo "  → Copying DLLs..."
 dlls=(
@@ -126,7 +127,11 @@ if [ -d "ExampleScripts" ]; then
   echo "  → Copying ExampleScripts..."
   cp ExampleScripts/*.cs dist/FtDSharp/ExampleScripts/ 2>/dev/null || true
 fi
-
+if [ -d "ScriptProject" ]; then
+  echo "  → Copying ScriptProject..."
+  cp ScriptProject/* dist/FtDSharp/ScriptProject/ 2>/dev/null || true
+fi
+    
 echo "  → Creating clone helper..."
 cat > dist/FtDSharp/clone-source.sh << 'CLONEOF'
 #!/bin/bash

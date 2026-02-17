@@ -1,6 +1,6 @@
 namespace FtDSharp.Facades
 {
-    internal partial class MissileControlFacade : IMissileWeapon
+    internal partial class MissileControlFacade : IMissileController
     {
         public int LoadedMissileCount
         {

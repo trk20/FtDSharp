@@ -94,7 +94,7 @@ public class WeaponControlDemo : IFtDSharp
             case IFlamerWeapon flamer:
                 Log($"    [Flamer] range={flamer.Range:F0}m fuel={flamer.CurrentFuel:F0}");
                 break;
-            case IMissileWeapon missiles:
+            case IMissileController missiles:
                 Log($"    [Missiles] {missiles.LoadedMissileCount}/{missiles.TotalTubeCount} ready");
                 break;
             case ILaserWeapon laser:

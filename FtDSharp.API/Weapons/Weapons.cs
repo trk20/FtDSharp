@@ -64,7 +64,7 @@ namespace FtDSharp
         /// <summary>
         /// Gets all missile controllers.
         /// </summary>
-        public static IReadOnlyList<IMissileWeapon> MissileControllers => GetByInterface<IMissileWeapon>();
+        public static IReadOnlyList<IMissileController> MissileControllers => GetByInterface<IMissileController>();
 
         private static IReadOnlyList<T> GetByInterface<T>() where T : class, IWeapon
         {

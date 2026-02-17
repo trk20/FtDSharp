@@ -3,7 +3,7 @@ namespace FtDSharp
     /// <summary>
     /// Interface for missile controllers.
     /// </summary>
-    public interface IMissileWeapon : IWeapon
+    public interface IMissileController : IWeapon
     {
         /// <summary>Number of loaded (ready to launch) missiles across all tubes.</summary>
         int LoadedMissileCount { get; }

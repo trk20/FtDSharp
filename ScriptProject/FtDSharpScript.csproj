@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    FtDSharp mod DLL. Adjust the path if your mod is installed elsewhere.
+    Default assumes this project lives inside the FtDSharp mod folder (Mods/FtDSharp/ScriptProject/).
+  -->
+  <ItemGroup>
+    <Reference Include="FtdSharp">
+      <HintPath>..\FtdSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\ftd-managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

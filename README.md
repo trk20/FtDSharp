@@ -77,88 +77,67 @@ For a more detailed guide on getting started and more advanced topics, check the
 
 ## Why C#?
 
-FtD's built-in Lua API is functional, but writing anything non-trivial means wrestling with index-based loops, manual vector math, zero type safety, and terrible error handling. FtDSharp replaces all of that with a strongly-typed C# API that handles the boilerplate for you, extends scripting capabilities to match breadboards, and gives you the full (ish) power of C# to write and debug your scripts.
+FtD's built-in Lua API is functional, but writing anything non-trivial means wrestling with index-based loops, zero type safety, and terrible error handling. FtDSharp replaces all of that with a strongly-typed C# API that handles the boilerplate for you, extends scripting capabilities to match breadboards, and gives you the full (ish) power of C# to write and debug your scripts.
 
 ### Missile Guidance: Lua vs C#
 
-A real community Lua missile guidance script - 90+ lines of index loops, manual vector math helper functions, and raw table manipulation:
+A real community Lua missile guidance script - 60+ lines with index loops, magic numbers, and all API calls must occur within `Update(I)`:
 
 <details>
-<summary><strong>Lua: 90+ lines</strong></summary>
+<summary><strong>Lua: 60+ lines</strong></summary>
 
 ```lua
--- Credit to bigbean6142 on the OFD discord for this Lua missile guidance example
-local recentVelocities = {}
-local recentAccelerations = {}
-local v = 0
-local maxTicks = 0.05 * 40
-local sumVelocity = {x = 0, y = 0, z = 0}
-local sumAcceleration = {x = 0, y = 0, z = 0}
-local count = 0
+-- Credit to jalanisa for corrections
+launchers = {}
 
-function Update(I)
-    local targetInfo = I:GetTargetInfo(0, 0) -- hardcoded to first mainframe's primary target
-    if not targetInfo.Valid then return end
-
-    local previousVelocity = recentVelocities[v] or targetInfo.Velocity
-    recentVelocities[v] = targetInfo.Velocity
-    recentAccelerations[v] = Vector3_Subtract(targetInfo.Velocity, previousVelocity)
-
-    sumVelocity = {x = 0, y = 0, z = 0}
-    sumAcceleration = {x = 0, y = 0, z = 0}
-    count = 0
-
-    for _, velocity in pairs(recentVelocities) do
-        sumVelocity = Vector3_Add(sumVelocity, velocity)
-        count = count + 1
-    end
-    for _, acceleration in pairs(recentAccelerations) do
-        sumAcceleration = Vector3_Add(sumAcceleration, acceleration)
-    end
-
-    local averageVelocity = Vector3_Divide(sumVelocity, count)
-    local averageAcceleration = Vector3_Divide(sumAcceleration, count)
-    v = (v + 1) % maxTicks
-
-    for i = 0, I:GetLuaTransceiverCount() - 1 do
-        for j = 0, I:GetLuaControlledMissileCount(i) - 1 do
-            local missile = I:GetLuaControlledMissileInfo(i, j)
-            local distanceToTarget = Vector3_Distance(missile.Position, targetInfo.Position)
-            local timeToImpact = distanceToTarget / Vector3_Magnitude(missile.Velocity)
-
-            local predictedPosition = Vector3_Add(
-                Vector3_Add(targetInfo.Position, Vector3_Multiply(averageVelocity, timeToImpact)),
-                Vector3_Multiply(Vector3_Multiply(averageAcceleration, timeToImpact), 0.5 * timeToImpact)
-            )
-
-            I:SetLuaControlledMissileAimPoint(i, j, predictedPosition.x, predictedPosition.y, predictedPosition.z)
+function init(I)
+    I:ClearLogs()
+    for iw = 0, I:GetWeaponCount()-1 do
+        local w = I:GetWeaponInfo(iw)
+        if w.Valid and w.WeaponType == 7 then -- magic number for missile launcher
+            table.insert(launchers, iw)
         end
     end
 end
 
-function Vector3_Add(a, b)
-    return {x = a.x + b.x, y = a.y + b.y, z = a.z + b.z}
+function apply_to_missiles(I, fn)
+    for it = 0, I:GetLuaTransceiverCount()-1 do
+        for im = 0, I:GetLuaControlledMissileCount(it)-1 do
+            fn(it, im)
+        end
+    end
 end
-function Vector3_Subtract(a, b)
-    return {x = a.x - b.x, y = a.y - b.y, z = a.z - b.z}
-end
-function Vector3_Multiply(v, scalar)
-    return {x = v.x * scalar, y = v.y * scalar, z = v.z * scalar}
-end
-function Vector3_Divide(v, scalar)
-    return {x = v.x / scalar, y = v.y / scalar, z = v.z / scalar}
-end
-function Vector3_Magnitude(v)
-    return math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-end
-function Vector3_Distance(a, b)
-    return Vector3_Magnitude(Vector3_Subtract(a, b))
+
+function Update(I)
+    if init then init = init(I) end
+
+    if I:GetNumberOfTargets(0) == 0 then
+        apply_to_missiles(I, function(it, im)
+            I:DetonateLuaControlledMissile(it, im)
+        end)
+        return
+    end
+
+    for _, iw in ipairs(launchers) do
+        I:FireWeapon(iw, 0)
+    end
+
+    local target = I:GetTargetInfo(0, 0)
+
+    apply_to_missiles(I, function(it, im)
+        local missileInfo = I:GetLuaControlledMissileInfo(it, im)
+        local timeToImpact = Vector3.Distance(missileInfo.Position, target.Position)
+                           / missileInfo.Velocity.magnitude;
+
+        local predicted = target.Position + target.Velocity * timeToImpact;
+        I:SetLuaControlledMissileAimPoint(it, im, predicted.x, predicted.y, predicted.z)
+    end)
 end
 ```
 
 </details>
 
-**C#: 28 lines**, same logic, actually readable:
+**C#: 28 lines**, same logic:
 
 ```csharp
 using FtDSharp;
@@ -169,14 +148,14 @@ public class MissileGuidance : IFtDSharp
     public void Update(float deltaTime)
     {
         var target = AI.HighestPriorityMainframe.PrimaryTarget;
-        foreach (var controller in Weapons.MissileControllers)
-            controller.Fire();
-
         if (target == null)
         {
             foreach (var m in Guidance.Missiles) m.Detonate();
             return;
         }
+
+        foreach (var controller in Weapons.MissileControllers)
+            controller.Fire();
 
         foreach (var missile in Guidance.Missiles)
         {
@@ -191,7 +170,7 @@ public class MissileGuidance : IFtDSharp
 }
 ```
 
-No index loops, manual vector math, or annoying boilerplate.
+No index loops or annoying boilerplate.
 
 ### PID Control: Lua vs C#
 

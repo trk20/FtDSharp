@@ -69,7 +69,7 @@ namespace FtDSharp.Facades
         public bool OnTarget => _lastResult?.IsOnTarget ?? false;
         public bool CanAim => _lastResult?.CanAim ?? false;
         public bool IsBlocked => _lastResult?.AimResult.IsBlocked ?? false;
-        public bool CanFire => _lastResult?.CanFire ?? false;
+        public virtual bool CanFire => _lastResult?.CanFire ?? false;
         public float FlightTime => _lastResult?.FlightTime ?? 0f;
         public Vector3 AimPoint => _lastResult?.AimPoint ?? Vector3.zero;
         public bool BlockedByTerrain => _lastResult?.IsTerrainBlocking ?? false;

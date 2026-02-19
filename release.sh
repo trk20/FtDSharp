@@ -144,12 +144,12 @@ chmod +x dist/FtDSharp/clone-source.sh
 echo "[5/5] Creating release archive..."
 cd dist
 if command -v zip &> /dev/null; then
-  zip -r "../FtDSharp-v$VERSION.zip" FtDSharp
-  echo "  ✓ Created FtDSharp-v$VERSION.zip (using zip)"
+  zip -r "../FtDSharp.zip" FtDSharp
+  echo "  ✓ Created FtDSharp.zip (using zip)"
 else
   # Windows powershell's Compress-Archive
-  powershell -Command "Compress-Archive -Path 'FtDSharp\*' -DestinationPath \"../FtDSharp-v$VERSION.zip\" -Force"
-  echo "  ✓ Created FtDSharp-v$VERSION.zip (using Compress-Archive)"
+  powershell -Command "Compress-Archive -Path 'FtDSharp\*' -DestinationPath \"../FtDSharp.zip\" -Force"
+  echo "  ✓ Created FtDSharp.zip (using Compress-Archive)"
 fi
 cd ..
 

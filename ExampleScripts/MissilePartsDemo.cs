@@ -10,7 +10,7 @@ using static FtDSharp.AI;
 /// </summary>
 public class MissilePartsDemo : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
         var target = HighestPriorityMainframe.PrimaryTarget;

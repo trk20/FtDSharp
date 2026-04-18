@@ -60,7 +60,7 @@ public class SampleScript : IFtDSharp
         Log($"I am {MainConstruct.Name} at {MainConstruct.Position}");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         // TODO: implement your logic here.
     }
@@ -70,8 +70,14 @@ public class SampleScript : IFtDSharp
 Your script must implement `IFtDSharp`, which requires a single method:
 
 ```csharp
-void Update(float deltaTime);  // Called every game tick (~40 Hz at 1x speed)
+void Update();  // Called every game tick
 ```
+
+Timing values are available from `Game`:
+
+- `Game.RealDeltaTime` (wall-clock dt between script ticks)
+- `Game.GameDeltaTime` (in-game scaled dt)
+- `Game.RealTime` / `Game.GameTime`
 
 For a more detailed guide on getting started and more advanced topics, check the [GitHub wiki](https://github.com/trk20/FtDSharp/wiki/Getting-Started)
 
@@ -145,7 +151,7 @@ using UnityEngine;
 
 public class MissileGuidance : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
         var target = AI.HighestPriorityMainframe.PrimaryTarget;
         if (target == null)
@@ -257,7 +263,7 @@ public class AltitudeHold : IFtDSharp
         setpoint: () => 200f // defaults same as AI PIDs - kP=0.05f, kI=250f, kD=0.3f
     );
 
-    public void Update(float deltaTime) => _altPid.Update(deltaTime);
+    public void Update() => _altPid.Update(Game.GameDeltaTime);
 }
 ```
 
@@ -306,7 +312,7 @@ using FtDSharp;
 
 public class SimpleWeaponControl : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
         var target = AI.HighestPriorityMainframe?.PrimaryTarget;
         if (target == null) return;
@@ -325,10 +331,8 @@ public class SimpleWeaponControl : IFtDSharp
 **Lua**: Errors are cryptic, usually unhelpful, and only show happen at runtime when the offending code is executed:
 <img width="538" height="98" alt="IMG_20260217_074224" src="https://github.com/user-attachments/assets/dc9cefd0-5a8f-4376-9ef4-a769c8d2f990" />
 
-
 **FtDSharp**: Clear Roslyn diagnostics with line numbers, shown in the Lua box log:
 <img width="953" height="187" alt="546665243-96ea2b2b-e137-4030-9776-d47d13ced1c6" src="https://github.com/user-attachments/assets/cc22068b-7457-41b8-91be-ebd8cb938ce2" />
-
 
 ##### Note: the pretty UI shown here is part of jalanisa's [AtsuLuaEditor mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3405611847), but FtDSharp's error reporting works with or without it.
 

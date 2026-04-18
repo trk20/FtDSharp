@@ -45,14 +45,14 @@ public class PIDControlDemo : IFtDSharp
         Log("PID Control Demo initialized.");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 
         // Just call Update() on each PID 
-        _altitudePid.Update(deltaTime);
-        _pitchPid.Update(deltaTime);
-        _rollPid.Update(deltaTime);
+        _altitudePid.Update(GameDeltaTime);
+        _pitchPid.Update(GameDeltaTime);
+        _rollPid.Update(GameDeltaTime);
 
         var construct = Game.MainConstruct;
         Log($"Altitude: {construct.Position.y:F1}m (target: {TargetAltitude}m, error: {_altitudePid.LastError:F1})");

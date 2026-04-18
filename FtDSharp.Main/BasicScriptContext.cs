@@ -1,24 +1,39 @@
-using System.Diagnostics;
 using FtDSharp.Facades;
 
 namespace FtDSharp
 {
     internal sealed class BasicScriptContext : IScriptContext
     {
-        private readonly Stopwatch _uptime = Stopwatch.StartNew();
         private readonly BasicLogApi _log = new();
         private MainConstruct? _construct;
         private MainConstructFacade? _facade;
         private long _ticks = 0;
+        private float _realTime;
+        private float _gameTime;
+        private float _realDeltaTime;
+        private float _gameDeltaTime;
 
         public IMainConstruct Self => _facade!;
         public ILogApi Log => _log;
-        public float TimeSinceStart => (float)_uptime.Elapsed.TotalSeconds;
+        public float RealTimeSinceStart => _realTime;
+        public float GameTimeSinceStart => _gameTime;
+        public float RealDeltaTime => _realDeltaTime;
+        public float GameDeltaTime => _gameDeltaTime;
         public long TicksSinceStart => _ticks;
         public IBlockToConstructBlockTypeStorage? BlockTypeStorage => _construct?.iBlockTypeStorage;
         public AllConstruct? RawAllConstruct => _construct;
 
-        internal void IncrementTick() => _ticks++;
+        internal void IncrementTick(float gameDeltaTime, float realDeltaTime)
+        {
+            if (gameDeltaTime < 0f) gameDeltaTime = 0f;
+            if (realDeltaTime < 0f) realDeltaTime = 0f;
+
+            _ticks++;
+            _gameDeltaTime = gameDeltaTime;
+            _realDeltaTime = realDeltaTime;
+            _gameTime += gameDeltaTime;
+            _realTime += realDeltaTime;
+        }
 
         internal void Attach(LuaBox luaBox)
         {

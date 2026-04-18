@@ -15,7 +15,6 @@ obj/
 # Visual Studio / VS Code
 .vs/
 .github/
-.serena/
 !CODEOWNERS
 !.github/design-objectives.md
 .vscode/
@@ -27,6 +26,10 @@ ftd-managed/*
 
 # FtD Reference Assemblies
 FtD_Reference/**
+FtDSharp.GameRef/**
+
+# Game Reference data (decompiled source, indexes)
+.ftd-gameref/
 
 # NuGet packages
 packages/
@@ -37,6 +40,8 @@ packages/
 *.log
 *.cache
 *.sln
+dist/
+docs/
 
 # OS generated files
 .DS_Store

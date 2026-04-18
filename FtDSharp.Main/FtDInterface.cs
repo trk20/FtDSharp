@@ -12,7 +12,7 @@ namespace FtDSharp
 
 		public string name => "FtDSharp";
 
-		public Version version => new(0, 1, 5);
+		public Version version => new(0, 3, 0);
 
 		public void OnLoad()
 		{

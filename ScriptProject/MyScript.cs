@@ -9,7 +9,7 @@ public class MyScript : IFtDSharp
         Log("Script initialized.");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         // Your logic here — runs every game tick (~40 Hz at 1x speed)
     }

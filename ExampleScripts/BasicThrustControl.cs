@@ -23,7 +23,7 @@ public class BasicThrustControl : IFtDSharp
         Log("BasicThrustControl initialized.");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
         Log($"Target altitude: {TargetAltitude}m");

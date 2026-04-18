@@ -9,7 +9,7 @@ using static FtDSharp.Drawing;
 public class FleetAwarenessDemo : IFtDSharp
 {
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         Cross(Game.MainConstruct.Position, Color.white, width: 2f, scale: 5f);
 

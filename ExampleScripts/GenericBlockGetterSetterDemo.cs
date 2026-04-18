@@ -16,7 +16,7 @@ public class GenericBlockGetterSetterDemo : IFtDSharp
         Log($"Found {Blocks.SteamJets.Count} steam jet(s) on construct");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 

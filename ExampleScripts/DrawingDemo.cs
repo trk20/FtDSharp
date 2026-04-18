@@ -10,7 +10,7 @@ public class DrawingDemo : IFtDSharp
     private const float LoadingRadius = 15f;
     private float AnimationAngle;
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         var self = Game.MainConstruct;
         var mainframe = AI.HighestPriorityMainframe;
@@ -19,7 +19,7 @@ public class DrawingDemo : IFtDSharp
 
         Gimbal(self.Position, radius: 10f, self.Rotation, width: 1f);
 
-        AnimationAngle += deltaTime * 180f;
+        AnimationAngle += Game.GameDeltaTime * 180f;
         var offset = Quaternion.Euler(0, AnimationAngle, 0) * Vector3.forward * LoadingRadius;
         Point(self.Position + Vector3.up * 30f + offset, Color.cyan, size: 10f, duration: 30f, fade: true);
 

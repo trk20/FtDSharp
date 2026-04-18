@@ -26,7 +26,7 @@ public class SampleScript : IFtDSharp
         Log($""I am {MainConstruct.Name} at {MainConstruct.Position}"");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         // TODO: implement your logic here.
     }
@@ -94,21 +94,35 @@ public class SampleScript : IFtDSharp
 
         // todo: investigate multiplayer (probably broken)
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(GameSpeedManager), "SetTimeScale")]
+        private static void GameSpeedManager_SetTimeScale_Prefix(float newTimeScale)
+        {
+            bool wasPaused = Time.timeScale <= 0f;
+            bool willPause = newTimeScale <= 0f;
+
+            if (!wasPaused && willPause)
+                PauseClock.OnPaused();
+            else if (wasPaused && !willPause)
+                PauseClock.OnUnpaused();
+        }
+
         private sealed class LuaRuntimeState
         {
             private readonly ScriptHost _host = new();
             private readonly BasicScriptContext _context = new();
             private string _cachedSource = string.Empty;
-            private float _lastRealtime;
+            private string? _cachedHash;
+            private float _lastAdjustedRealtime;
 
             internal bool IsActive => _host.Active;
 
             internal void Attach(LuaBox luaBox)
             {
                 _context.Attach(luaBox);
-                if (_lastRealtime <= 0f)
+                if (_lastAdjustedRealtime <= 0f)
                 {
-                    _lastRealtime = Time.realtimeSinceStartup;
+                    _lastAdjustedRealtime = PauseClock.AdjustedRealtime;
                 }
             }
 
@@ -125,44 +139,72 @@ public class SampleScript : IFtDSharp
                 {
                     _host.Deactivate();
                     _cachedSource = string.Empty;
+                    _cachedHash = null;
                     return false;
                 }
 
-                var requiresCompile = !_host.Active || !string.Equals(code, _cachedSource, StringComparison.Ordinal);
-                if (!requiresCompile)
+                var hash = ScriptHost.ComputeHash(code);
+
+                // Already active with the same code — no-op
+                if (_host.Active && string.Equals(hash, _cachedHash, StringComparison.Ordinal))
                 {
-                    return _host.Active;
+                    return true;
+                }
+
+                if (_host.Active)
+                {
+                    _host.Deactivate();
                 }
 
                 _cachedSource = code;
-                var success = _host.TryCompileAndActivate(code, _context, out var result);
-                if (success)
+                _cachedHash = hash;
+
+                var (compiled, diagnostics) = _host.Compile(code, hash);
+                if (!compiled)
                 {
-                    _lastRealtime = Time.realtimeSinceStartup;
-                    AdvLogger.LogInfo($"[FtDSharp] Compiled C# script for LuaBox #{luaBox.GetHashCode()} in {result.CompileTime.TotalMilliseconds:F2} ms");
-                }
-                else
-                {
-                    ReportDiagnostics(result.Diagnostics, result.ErrorMessage);
+                    ReportDiagnostics(diagnostics, _host.LastError);
+                    return false;
                 }
 
-                return success;
+                var instantiated = _host.Instantiate(hash, _context);
+                if (!instantiated)
+                {
+                    ReportDiagnostics(Array.Empty<Diagnostic>(), _host.LastError);
+                    return false;
+                }
+
+                _lastAdjustedRealtime = PauseClock.AdjustedRealtime;
+                if (_host.LastCompileTime.TotalMilliseconds > 0)
+                {
+                    AdvLogger.LogInfo($"[FtDSharp] Compiled C# script for LuaBox #{luaBox.GetHashCode()} in {_host.LastCompileTime.TotalMilliseconds:F2} ms");
+                }
+
+                return true;
             }
 
             internal void Tick(LuaBox luaBox)
             {
-                // note: probably need to account for slowdown
-                if (!_host.Active)
+                if (!luaBox.Running || !_host.Active)
                 {
+                    _host.Deactivate();
+                    _lastAdjustedRealtime = PauseClock.AdjustedRealtime;
                     return;
                 }
 
-                // Game time tick (1/40s)
-                var delta = 1f / 40f;
+                var adjustedRealtime = PauseClock.AdjustedRealtime;
+                var realDelta = adjustedRealtime - _lastAdjustedRealtime;
+                _lastAdjustedRealtime = adjustedRealtime;
+
+                if (realDelta < 0f)
+                {
+                    realDelta = 0f;
+                }
+
+                var gameDelta = Time.fixedDeltaTime;
 
                 _context.Attach(luaBox);
-                _context.IncrementTick();
-                _host.Tick(_context, delta);
+                _context.IncrementTick(gameDelta, realDelta);
+                _host.Tick(_context);
             }
 
             private void ReportDiagnostics(Diagnostic[] diagnostics, string? errorMessage)

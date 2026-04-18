@@ -11,7 +11,7 @@ using static FtDSharp.AI;
 /// </summary>
 public class WeaponTypePropertiesDemo : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 

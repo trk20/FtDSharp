@@ -29,7 +29,7 @@ public class SubTurretDemo : IFtDSharp
             rootTurretController = new WeaponController(rootWeapons);
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 

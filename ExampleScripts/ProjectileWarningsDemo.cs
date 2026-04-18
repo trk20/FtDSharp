@@ -8,8 +8,9 @@ using static FtDSharp.Drawing;
 /// </summary>
 public class ProjectileWarningsDemo : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
+        var deltaTime = Game.GameDeltaTime;
         foreach (var warning in IncomingProjectiles)
         {
             var color = warning.Type switch

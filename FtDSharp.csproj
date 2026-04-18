@@ -7,6 +7,9 @@
   </PropertyGroup>
 
   <!-- Exclude the CodeGen project folder and decompile reference from compilation -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);FtDSharp_Reference\**\*</DefaultItemExcludes>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Remove="FtDSharp.CodeGen\**" />
     <None Remove="FtDSharp.CodeGen\**" />
@@ -73,7 +76,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.12.0-beta1.25218.8" GeneratePathProperty="true" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
+      <HintPath>$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.BannedApiAnalyzers.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers">
+      <HintPath>$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup>
@@ -81,7 +94,7 @@
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Copy SourceFiles="$(OutputPath)FtdSharp.dll" DestinationFolder="$(ProjectDir)" />
+    <Copy SourceFiles="$(OutputPath)FtDSharp.dll" DestinationFolder="$(ProjectDir)" />
     <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
     <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
     <Copy SourceFiles="$(OutputPath)System.Collections.Immutable.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
@@ -90,6 +103,9 @@
     <Copy SourceFiles="$(OutputPath)System.Memory.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
     <Copy SourceFiles="$(OutputPath)System.Runtime.CompilerServices.Unsafe.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
     <Copy SourceFiles="$(OutputPath)System.Numerics.Vectors.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)System.Threading.Tasks.Extensions.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.BannedApiAnalyzers.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
   </Target>
 
 </Project>

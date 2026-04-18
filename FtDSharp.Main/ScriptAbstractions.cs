@@ -6,14 +6,18 @@ namespace FtDSharp
 {
     public interface IFtDSharp
     {
-        void Update(float deltaTime);
+        void Update();
+        void OnStop() { }
     }
 
     internal interface IScriptContext
     {
         IMainConstruct Self { get; }
         ILogApi Log { get; }
-        float TimeSinceStart { get; }
+        float RealTimeSinceStart { get; }
+        float GameTimeSinceStart { get; }
+        float RealDeltaTime { get; }
+        float GameDeltaTime { get; }
         long TicksSinceStart { get; }
         /// <summary>Raw access to the block type storage.</summary>
         IBlockToConstructBlockTypeStorage? BlockTypeStorage { get; }

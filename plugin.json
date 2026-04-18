@@ -1,8 +1,8 @@
 {
   "name": "FtDSharp",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "gameversion": "4.3.0",
   "conflicts": [],
   "depends": [],
-  "filename": "0Harmony.dll,Microsoft.CodeAnalysis.dll,Microsoft.CodeAnalysis.CSharp.dll,System.Collections.Immutable.dll,System.Reflection.Metadata.dll,System.Text.Encoding.CodePages.dll,System.Memory.dll,System.Runtime.CompilerServices.Unsafe.dll,System.Numerics.Vectors.dll,FtDSharp.dll"
+  "filename": "0Harmony.dll,Microsoft.CodeAnalysis.dll,Microsoft.CodeAnalysis.CSharp.dll,System.Collections.Immutable.dll,System.Reflection.Metadata.dll,System.Text.Encoding.CodePages.dll,System.Memory.dll,System.Runtime.CompilerServices.Unsafe.dll,System.Numerics.Vectors.dll,Microsoft.CodeAnalysis.BannedApiAnalyzers.dll,Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers.dll,System.Threading.Tasks.Extensions.dll,FtDSharp.dll"
 }

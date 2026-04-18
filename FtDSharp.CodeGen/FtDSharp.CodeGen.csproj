@@ -9,9 +9,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Scriban" Version="5.10.0" />
+    <PackageReference Include="Scriban" Version="7.1.0" />
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="FtD_Reference\**" />
+    <None Remove="FtD_Reference\**" />
+    <Compile Remove="..\FtDSharp.Main\**" />
+    <None Remove="..\FtDSharp.Main\**" />
+    <Compile Remove="dist\**" />
+    <None Remove="dist\**" />
+    <Compile Remove="ScriptProject\**" />
+    <None Remove="ScriptProject\**" />
   </ItemGroup>
 
   <ItemGroup>

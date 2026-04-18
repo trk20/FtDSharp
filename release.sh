@@ -19,7 +19,7 @@ while [[ $# -gt 0 ]]; do
       echo "Example: ./release.sh -v 0.2.0"
       echo "         ./release.sh -v 0.2.0 --stable"
       exit 1
-      ;;
+      ;; 
   esac
 done
 
@@ -99,6 +99,9 @@ dlls=(
   "System.Memory.dll"
   "System.Runtime.CompilerServices.Unsafe.dll"
   "System.Numerics.Vectors.dll"
+  "System.Threading.Tasks.Extensions.dll"
+  "Microsoft.CodeAnalysis.BannedApiAnalyzers.dll"
+  "Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers.dll"
   "FtDSharp.dll"
 )
 

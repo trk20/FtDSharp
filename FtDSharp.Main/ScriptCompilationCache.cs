@@ -1,25 +1,27 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace FtDSharp
 {
     internal static class ScriptCompilationCache
     {
-        private static readonly ConcurrentDictionary<string, byte[]> Cache = new();
+        private static readonly ConcurrentDictionary<string, Assembly> Cache = new();
 
-        internal static bool TryGet(string hash, out byte[]? ilBytes)
+        internal static bool TryGet(string hash, out Assembly? assembly)
         {
-            return Cache.TryGetValue(hash, out ilBytes);
+            return Cache.TryGetValue(hash, out assembly);
         }
 
-        internal static void Store(string hash, byte[] ilBytes)
+        internal static void Store(string hash, Assembly assembly)
         {
-            Cache.TryAdd(hash, ilBytes);
+            Cache.TryAdd(hash, assembly);
         }
 
         internal static void Warmup()
         {
             var host = new ScriptHost();
-            host.TryCompileAndActivate(ReplaceLuaPatches.DefaultCSharpTemplate, ctx: null, out _);
+            var hash = ScriptHost.ComputeHash(ReplaceLuaPatches.DefaultCSharpTemplate);
+            host.Compile(ReplaceLuaPatches.DefaultCSharpTemplate, hash);
         }
     }
 }

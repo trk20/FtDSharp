@@ -18,7 +18,7 @@ public class MissileComponentScanner
         var results = new List<RawMissileComponentInfo>();
         var missileComponentType = typeof(MissileComponent);
 
-        var componentTypes = gameAssembly.GetTypes()
+        var componentTypes = Utils.AssemblyTypes.GetLoadableTypes(gameAssembly)
             .Where(t => missileComponentType.IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
             .OrderBy(t => t.Name)
             .ToList();
@@ -170,7 +170,7 @@ public class MissileComponentScanner
     {
         var missileComponentType = typeof(MissileComponent);
 
-        return gameAssembly.GetTypes()
+        return FtDSharp.CodeGen.Utils.AssemblyTypes.GetLoadableTypes(gameAssembly)
             .Where(t => missileComponentType.IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
             .Select(t => t.Name)
             .OrderBy(n => n)

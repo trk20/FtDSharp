@@ -15,7 +15,7 @@ public class MultiAIAimpointComparison : IFtDSharp
         Log("MultiAIAimpointComparison script initialized.");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 

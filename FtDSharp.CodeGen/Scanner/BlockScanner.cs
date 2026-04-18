@@ -14,7 +14,7 @@ public class BlockScanner
     {
         var results = new List<RawBlockInfo>();
 
-        var blockTypes = gameAssembly.GetTypes()
+        var blockTypes = Utils.AssemblyTypes.GetLoadableTypes(gameAssembly)
             .Where(t => typeof(Block).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
             .Where(t => t.IsPublic || t.IsNestedPublic)
             .Where(t => !Overrides.SkipClasses.Contains(t))

@@ -8,7 +8,7 @@ public class TargetInfoPrinter : IFtDSharp
         Log("TargetInfoPrinter script initialized.");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 

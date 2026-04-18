@@ -7,7 +7,7 @@ using static FtDSharp.Logging;
 /// </summary>
 public class SubObjectHierarchy : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
         foreach (var sub in Blocks.SpinBlocks)

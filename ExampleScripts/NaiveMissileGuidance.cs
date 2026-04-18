@@ -7,7 +7,7 @@ public class NaiveMissileGuidance : IFtDSharp
         Logging.Log("NaiveMissileGuidance script initialized.");
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         var target = AI.HighestPriorityMainframe.PrimaryTarget;
 

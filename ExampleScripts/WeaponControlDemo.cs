@@ -11,7 +11,7 @@ using static FtDSharp.Drawing;
 /// </summary>
 public class WeaponControlDemo : IFtDSharp
 {
-    public void Update(float deltaTime)
+    public void Update()
     {
         ClearLogs();
 

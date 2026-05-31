@@ -14,37 +14,37 @@ namespace FtDSharp
 
         /// <summary>Draws an arrow from start to end position.</summary>
         public static void Arrow(Vector3 start, Vector3 end, Color color, float width = DefaultWidth, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new ArrowFigure(start, end, color, width, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new ArrowFigure(start, end, color, width, duration, fade));
 
         /// <summary>Draws a line from start to end position.</summary>
         public static void Line(Vector3 start, Vector3 end, Color color, float width = DefaultWidth, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new LineFigure(start, end, color, width, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new LineFigure(start, end, color, width, duration, fade));
 
         /// <summary>Draws a point marker at the specified position. (Note: can be a bit weird with zoom)</summary>
         public static void Point(Vector3 position, Color color, float size = DefaultWidth, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new PointFigure(position, color, size, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new PointFigure(position, color, size, duration, fade));
 
         /// <summary>Draws a 3D cross at the specified position.</summary>
         public static void Cross(Vector3 position, Color color, float width = DefaultWidth, float scale = 1f, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new CrossFigure(position, color, width, scale, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new CrossFigure(position, color, width, scale, duration, fade));
 
         /// <summary>Draws a sphere (3 perpendicular circles) at the specified position.</summary>
         public static void Sphere(Vector3 position, float radius, Color color, float width = DefaultWidth, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new SphereFigure(position, radius, color, width, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new SphereFigure(position, radius, color, width, duration, fade));
 
         /// <summary>Draws a circle at the specified position with the given orientation.</summary>
         public static void Circle(Vector3 position, float radius, Color color, Vector3 normal, float width = DefaultWidth, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new CircleFigure(position, radius, color, Quaternion.LookRotation(normal), width, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new CircleFigure(position, radius, color, Quaternion.LookRotation(normal), width, duration, fade));
 
         /// <summary>Draws a circle at the specified position with the given rotation.</summary>
         public static void Circle(Vector3 position, float radius, Color color, Quaternion rotation, float width = DefaultWidth, float duration = DefaultDuration, bool fade = false)
-            => DrawingService.Instance.AddFigure(new CircleFigure(position, radius, color, rotation, width, duration, fade));
+            => ScriptContext.Current?.Drawing.AddFigure(new CircleFigure(position, radius, color, rotation, width, duration, fade));
 
         /// <summary>Draws a gimbal with 3 circles (one colored circle for each axis) at the specified position.</summary>
         public static void Gimbal(Vector3 position, float radius, Quaternion rotation, float width = DefaultWidth, float duration = DefaultDuration)
-            => DrawingService.Instance.AddFigure(new GimbalFigure(position, radius, rotation, width, duration));
+            => ScriptContext.Current?.Drawing.AddFigure(new GimbalFigure(position, radius, rotation, width, duration));
 
         /// <summary>Clears all currently drawn figures.</summary>
-        public static void Clear() => DrawingService.Instance.Clear();
+        public static void Clear() => ScriptContext.Current?.Drawing.Clear();
     }
 }

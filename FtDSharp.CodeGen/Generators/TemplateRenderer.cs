@@ -11,7 +11,9 @@ public class TemplateRenderer
     private readonly Template _facadeTemplate;
     private readonly Template _logicalInterfacesTemplate;
     private readonly Template _blockFactoryTemplate;
-    private readonly Template _blocksAccessorTemplate;
+    private readonly Template _blocksProviderInterfaceTemplate;
+    private readonly Template _blocksApiTemplate;
+    private readonly Template _blocksProviderImplTemplate;
 
     // Missile part templates
     private readonly Template _missilePartInterfaceTemplate;
@@ -25,7 +27,9 @@ public class TemplateRenderer
         _facadeTemplate = LoadTemplate("Facade.scriban");
         _logicalInterfacesTemplate = LoadTemplate("LogicalInterfaces.scriban");
         _blockFactoryTemplate = LoadTemplate("BlockFactory.scriban");
-        _blocksAccessorTemplate = LoadTemplate("BlocksAccessor.scriban");
+        _blocksProviderInterfaceTemplate = LoadTemplate("BlocksProviderInterface.scriban");
+        _blocksApiTemplate = LoadTemplate("BlocksApi.scriban");
+        _blocksProviderImplTemplate = LoadTemplate("BlocksProviderImpl.scriban");
 
         // Missile part templates
         _missilePartInterfaceTemplate = LoadTemplate("MissilePartInterface.scriban");
@@ -71,10 +75,22 @@ public class TemplateRenderer
         return _blockFactoryTemplate.Render(model);
     }
 
-    public string RenderBlocksAccessor(List<BlockDefinition> blocks)
+    public string RenderBlocksProviderInterface(List<BlockDefinition> blocks)
     {
         var model = CreateBlocksAccessorModel(blocks);
-        return _blocksAccessorTemplate.Render(model);
+        return _blocksProviderInterfaceTemplate.Render(model);
+    }
+
+    public string RenderBlocksApi(List<BlockDefinition> blocks)
+    {
+        var model = CreateBlocksAccessorModel(blocks);
+        return _blocksApiTemplate.Render(model);
+    }
+
+    public string RenderBlocksProviderImpl(List<BlockDefinition> blocks)
+    {
+        var model = CreateBlocksAccessorModel(blocks);
+        return _blocksProviderImplTemplate.Render(model);
     }
 
     private ScriptObject CreateInterfaceModel(BlockDefinition block)

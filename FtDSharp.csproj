@@ -11,6 +11,7 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);FtDSharp_Reference\**\*</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="FtDSharp.API\**" />
     <Compile Remove="FtDSharp.CodeGen\**" />
     <None Remove="FtDSharp.CodeGen\**" />
     <Compile Remove="FtD_Reference\**" />
@@ -19,6 +20,14 @@
     <None Remove="dist\**" />
     <Compile Remove="ScriptProject\**" />
     <None Remove="ScriptProject\**" />
+    <Compile Remove="ExampleScripts\**" />
+    <None Remove="ExampleScripts\**" />
+    <Compile Remove="FtDSharp.Tests\**" />
+    <None Remove="FtDSharp.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="FtDSharp.API\FtDSharp.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -95,6 +104,7 @@
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(OutputPath)FtDSharp.dll" DestinationFolder="$(ProjectDir)" />
+    <Copy SourceFiles="$(OutputPath)FtDSharp.API.dll" DestinationFolder="$(ProjectDir)" />
     <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
     <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
     <Copy SourceFiles="$(OutputPath)System.Collections.Immutable.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />

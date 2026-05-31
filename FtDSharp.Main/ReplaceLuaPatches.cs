@@ -14,18 +14,16 @@ namespace FtDSharp
         private const string LegacyLuaTemplate = "function Update(I)\n-- put your code here \nend";
 
         internal const string DefaultCSharpTemplate =
-@"using FtDSharp;
-using static FtDSharp.Logging;
-using static FtDSharp.Game;
-
-public class SampleScript : IFtDSharp
+@"public class MyScript
 {
-    public SampleScript()
+    [OnStart]
+    public void Initialize()
     {
         Log(""FtDSharp script template running."");
-        Log($""I am {MainConstruct.Name} at {MainConstruct.Position}"");
+        Log($""I am {Game.MainConstruct.Name} at {Game.MainConstruct.Position}"");
     }
 
+    [OnPhysicsTick]
     public void Update()
     {
         // TODO: implement your logic here.
@@ -111,9 +109,15 @@ public class SampleScript : IFtDSharp
         {
             private readonly ScriptHost _host = new();
             private readonly BasicScriptContext _context = new();
+            private readonly ProviderScope _scope;
             private string _cachedSource = string.Empty;
             private string? _cachedHash;
             private float _lastAdjustedRealtime;
+
+            internal LuaRuntimeState()
+            {
+                _scope = new ProviderScope(_context);
+            }
 
             internal bool IsActive => _host.Active;
 
@@ -166,7 +170,7 @@ public class SampleScript : IFtDSharp
                     return false;
                 }
 
-                var instantiated = _host.Instantiate(hash, _context);
+                var instantiated = _host.Instantiate(hash, _scope);
                 if (!instantiated)
                 {
                     ReportDiagnostics(Array.Empty<Diagnostic>(), _host.LastError);
@@ -204,7 +208,7 @@ public class SampleScript : IFtDSharp
 
                 _context.Attach(luaBox);
                 _context.IncrementTick(gameDelta, realDelta);
-                _host.Tick(_context);
+                _host.Tick(_scope);
             }
 
             private void ReportDiagnostics(Diagnostic[] diagnostics, string? errorMessage)

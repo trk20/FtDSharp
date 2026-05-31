@@ -23,6 +23,8 @@ obj/
 
 # FtD DLLs
 ftd-managed/*
+References/*.dll
+!References/.gitkeep
 
 # FtD Reference Assemblies
 FtD_Reference/**
@@ -39,7 +41,6 @@ packages/
 *.temp
 *.log
 *.cache
-*.sln
 dist/
 docs/
 

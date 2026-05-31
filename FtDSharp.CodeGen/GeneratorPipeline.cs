@@ -79,8 +79,14 @@ public class GeneratorPipeline
         var factoryCode = renderer.RenderBlockFactory(blocksToGenerate);
         File.WriteAllText(Path.Combine(facadeOutputPath, "BlockFactory.g.cs"), factoryCode);
 
-        var blocksCode = renderer.RenderBlocksAccessor(blocksToGenerate);
-        File.WriteAllText(Path.Combine(apiOutputPath, "Blocks.g.cs"), blocksCode);
+        var blocksInterfaceCode = renderer.RenderBlocksProviderInterface(blocksToGenerate);
+        File.WriteAllText(Path.Combine(apiOutputPath, "IBlocksProvider.g.cs"), blocksInterfaceCode);
+
+        var blocksApiCode = renderer.RenderBlocksApi(blocksToGenerate);
+        File.WriteAllText(Path.Combine(apiOutputPath, "Blocks.g.cs"), blocksApiCode);
+
+        var blocksProviderCode = renderer.RenderBlocksProviderImpl(blocksToGenerate);
+        File.WriteAllText(Path.Combine(facadeOutputPath, "BlocksProvider.g.cs"), blocksProviderCode);
 
         Log.Information("Generated {BlockCount} interfaces/facades with {PropCount} total properties",
             blocksToGenerate.Count, totalProperties);

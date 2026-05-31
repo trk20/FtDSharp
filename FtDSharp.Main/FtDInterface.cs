@@ -12,7 +12,7 @@ namespace FtDSharp
 
 		public string name => "FtDSharp";
 
-		public Version version => new(0, 3, 0);
+		public Version version => new(0, 4, 0);
 
 		public void OnLoad()
 		{
@@ -39,12 +39,12 @@ namespace FtDSharp
 		static ModInfo()
 		{
 			ModPath = Assembly.GetExecutingAssembly().Location;
-			ModName = Path.GetDirectoryName(ModPath)!;
+			ModName = Path.GetDirectoryName(ModPath);
 
 			while (Path.GetFileName(ModName) != "Mods")
 			{
 				ModPath = ModName;
-				ModName = Path.GetDirectoryName(ModPath)!;
+				ModName = Path.GetDirectoryName(ModPath);
 			}
 
 			ModName = Path.GetFileName(ModPath);

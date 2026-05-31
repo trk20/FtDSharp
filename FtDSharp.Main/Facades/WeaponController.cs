@@ -303,7 +303,7 @@ namespace FtDSharp
                 return;
             visited.Add(facade.Weapon);
 
-            _weapons!.Add(new WeaponItem
+            _weapons.Add(new WeaponItem
             {
                 Facade = facade,
                 Depth = depth,
@@ -323,7 +323,7 @@ namespace FtDSharp
                 Depth = depth,
                 AimingModule = new AimingModule(new GroundHitChecker())
             };
-            _turrets!.Add(turretItem);
+            _turrets.Add(turretItem);
 
             foreach (var child in facade.Weapons)
             {
@@ -339,7 +339,7 @@ namespace FtDSharp
 
         private void LinkClosestWeaponsToTurrets()
         {
-            foreach (var turret in _turrets!)
+            foreach (var turret in _turrets)
             {
                 var descendants = new List<WeaponItem>();
                 FindDescendantWeapons(turret.Facade, descendants);
@@ -372,7 +372,7 @@ namespace FtDSharp
                 }
                 else if (child is WeaponFacade weaponFacade)
                 {
-                    foreach (var item in _weapons!)
+                    foreach (var item in _weapons)
                     {
                         if (item.Weapon == weaponFacade.Weapon)
                         {
@@ -415,7 +415,7 @@ namespace FtDSharp
 
         private void CalculateWeaponDirections(TrackContext ctx)
         {
-            foreach (var weapon in _weapons!)
+            foreach (var weapon in _weapons)
             {
                 var projectileSpeed = ctx.Options.ProjectileSpeed ?? _overrideProjectileSpeed ?? weapon.ProjectileSpeed;
                 if (projectileSpeed <= 0) projectileSpeed = 500f;

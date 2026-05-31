@@ -6,16 +6,26 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Global usings to match the runtime compiler's injected prelude -->
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+    <Using Include="UnityEngine" />
+    <Using Include="FtDSharp" />
+    <Using Include="FtDSharp.Logging" Static="True" />
+  </ItemGroup>
+
   <!--
-    FtDSharp mod DLL. Adjust the path if your mod is installed elsewhere.
-    Default assumes this project lives inside the FtDSharp mod folder (Mods/FtDSharp/ScriptProject/).
+    Shipped release layout: this project lives at Mods/FtDSharp/ScriptProject/
+    and references the mod DLLs one directory up.
   -->
   <ItemGroup>
-    <Reference Include="FtdSharp">
-      <HintPath>..\FtdSharp.dll</HintPath>
+    <Reference Include="FtDSharp.API">
+      <HintPath>..\FtDSharp.API.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\ftd-managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\References\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

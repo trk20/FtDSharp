@@ -48,18 +48,16 @@ _Note: platform support is untested but should work anywhere the game runs aside
 Place a **Programmable Block** (cosmetic change from **Lua Box** with the mod enabled). The default template compiles and runs immediately:
 
 ```csharp
-using FtDSharp;
-using static FtDSharp.Logging;
-using static FtDSharp.Game;
-
-public class SampleScript : IFtDSharp
+public class MyScript
 {
-    public SampleScript()
+    [OnStart]
+    public void Initialize()
     {
         Log("FtDSharp script template running.");
-        Log($"I am {MainConstruct.Name} at {MainConstruct.Position}");
+        Log($"I am {Game.MainConstruct.Name} at {Game.MainConstruct.Position}");
     }
 
+    [OnPhysicsTick]
     public void Update()
     {
         // TODO: implement your logic here.
@@ -67,10 +65,19 @@ public class SampleScript : IFtDSharp
 }
 ```
 
-Your script must implement `IFtDSharp`, which requires a single method:
+Scripts receive implicit global usings (`System`, `System.Linq`, `UnityEngine`, `FtDSharp`, and `static FtDSharp.Logging`), so `Log()` works without imports. Use the `Game.` prefix for construct and timing APIs unless you add your own `using static FtDSharp.Game;`.
+
+Your script must declare at least one public entry-point method with an attribute such as `[OnPhysicsTick]`, `[OnStart]`, or `[OnStop]`:
 
 ```csharp
-void Update();  // Called every game tick
+[OnPhysicsTick]
+void Update();  // Called every physics tick (~40 Hz at 1x)
+
+[OnStart]
+void Initialize();  // Called once when the script activates
+
+[OnStop]
+void Stop();  // Called on deactivation or destruction
 ```
 
 Timing values are available from `Game`:
@@ -143,14 +150,12 @@ end
 
 </details>
 
-**C#: 28 lines**, same logic:
+**C#: 26 lines**, same logic:
 
 ```csharp
-using FtDSharp;
-using UnityEngine;
-
-public class MissileGuidance : IFtDSharp
+public class MissileGuidance
 {
+    [OnPhysicsTick]
     public void Update()
     {
         var target = AI.HighestPriorityMainframe.PrimaryTarget;
@@ -253,9 +258,7 @@ end
 **C#: just bind and update:**
 
 ```csharp
-using FtDSharp;
-
-public class AltitudeHold : IFtDSharp
+public class AltitudeHold
 {
     private readonly PID _altPid = PID.Bind(
         input: () => Game.MainConstruct.Position.y,
@@ -263,6 +266,7 @@ public class AltitudeHold : IFtDSharp
         setpoint: () => 200f // defaults same as AI PIDs - kP=0.05f, kI=250f, kD=0.3f
     );
 
+    [OnPhysicsTick]
     public void Update() => _altPid.Update(Game.GameDeltaTime);
 }
 ```
@@ -308,13 +312,12 @@ Even with all this manual math, this Lua version only handles simple velocity le
 **C# — one-line tracking with full ballistic prediction:**
 
 ```csharp
-using FtDSharp;
-
-public class SimpleWeaponControl : IFtDSharp
+public class SimpleWeaponControl
 {
+    [OnPhysicsTick]
     public void Update()
     {
-        var target = AI.HighestPriorityMainframe?.PrimaryTarget;
+        var target = AI.HighestPriorityMainframe.PrimaryTarget;
         if (target == null) return;
 
         foreach (var weapon in Weapons.All)
@@ -409,6 +412,15 @@ The [`ExampleScripts/`](ExampleScripts/) folder contains working examples demons
    ```
    <Steam>/steamapps/common/From The Depths/From_The_Depths_Data/Managed/*  →  ftd-managed/
    ```
+
+   For IDE projects (`ScriptProject/`, `ExampleScripts/`), also copy UnityEngine into `References/`:
+
+   ```bash
+   mkdir -p References
+   cp ftd-managed/UnityEngine.CoreModule.dll References/
+   ```
+
+   (`release.sh` does this automatically for `ScriptProject/`)
 
 3. Run the code generator to produce API bindings:
 

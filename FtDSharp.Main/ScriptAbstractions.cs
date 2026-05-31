@@ -1,40 +1,9 @@
 using System;
-using System.Collections.Generic;
 using BrilliantSkies.Core.Logger;
 
 namespace FtDSharp
 {
-    public interface IFtDSharp
-    {
-        void Update();
-        void OnStop() { }
-    }
-
-    internal interface IScriptContext
-    {
-        IMainConstruct Self { get; }
-        ILogApi Log { get; }
-        float RealTimeSinceStart { get; }
-        float GameTimeSinceStart { get; }
-        float RealDeltaTime { get; }
-        float GameDeltaTime { get; }
-        long TicksSinceStart { get; }
-        /// <summary>Raw access to the block type storage.</summary>
-        IBlockToConstructBlockTypeStorage? BlockTypeStorage { get; }
-        /// <summary>Raw access to the AllConstruct for internal use (Friendly/Warnings static classes).</summary>
-        AllConstruct? RawAllConstruct { get; }
-    }
-
-    public interface ILogApi
-    {
-
-        void Info(string message);
-        void Warn(string message);
-        void Error(string message);
-        void ClearLogs();
-    }
-
-    class BasicLogApi : ILogApi
+    class BasicLogApi
     {
         private LuaBinding? _binding;
 

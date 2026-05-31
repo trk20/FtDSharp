@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace FtDSharp
@@ -10,6 +11,7 @@ namespace FtDSharp
         /// <summary>
         /// Gets all active script controllable missiles launched by the current construct.
         /// </summary>
-        public static List<IMissile> Missiles => Game.MainConstruct?.Missiles ?? new List<IMissile>();
+        public static IReadOnlyList<IMissile> Missiles =>
+            ScriptContext.Current?.Guidance.Missiles ?? Array.Empty<IMissile>();
     }
 }

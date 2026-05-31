@@ -13,10 +13,11 @@ namespace FtDSharp
         /// All AI Mainframes on the construct, sorted by priority (lower = higher priority).
         /// </summary>
         public static IReadOnlyList<IMainframe> Mainframes =>
-            Game.MainConstruct?.Mainframes ?? Array.Empty<IMainframe>();
+            ScriptContext.Current?.AI.Mainframes ?? Array.Empty<IMainframe>();
 
         /// <summary> 
         /// The highest priority AI Mainframe on the construct.
+        /// Cannot be null unless there are no Mainframes at all, in which case the construct is dead anyway.
         /// </summary>
         public static IMainframe HighestPriorityMainframe => Mainframes.OrderBy(m => m.Block.Priority).First();
     }

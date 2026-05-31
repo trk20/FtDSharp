@@ -2,7 +2,7 @@ using FtDSharp.Facades;
 
 namespace FtDSharp
 {
-    internal sealed class BasicScriptContext : IScriptContext
+    internal sealed class BasicScriptContext
     {
         private readonly BasicLogApi _log = new();
         private MainConstruct? _construct;
@@ -14,7 +14,7 @@ namespace FtDSharp
         private float _gameDeltaTime;
 
         public IMainConstruct Self => _facade!;
-        public ILogApi Log => _log;
+        public BasicLogApi Log => _log;
         public float RealTimeSinceStart => _realTime;
         public float GameTimeSinceStart => _gameTime;
         public float RealDeltaTime => _realDeltaTime;
@@ -22,6 +22,7 @@ namespace FtDSharp
         public long TicksSinceStart => _ticks;
         public IBlockToConstructBlockTypeStorage? BlockTypeStorage => _construct?.iBlockTypeStorage;
         public AllConstruct? RawAllConstruct => _construct;
+        internal MainConstructFacade? MainConstructFacade => _facade;
 
         internal void IncrementTick(float gameDeltaTime, float realDeltaTime)
         {
@@ -43,7 +44,6 @@ namespace FtDSharp
                 _construct = newConstruct;
                 _facade = _construct != null ? new MainConstructFacade(_construct) : null;
                 FacadeCache.Clear(); // Clear persistent facade cache when switching constructs
-                Blocks.InvalidateCache(); // Clear block list cache when switching constructs
             }
             _log.AttachBinding(luaBox?.binding);
         }

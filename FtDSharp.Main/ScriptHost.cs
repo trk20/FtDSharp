@@ -18,12 +18,21 @@ namespace FtDSharp
 {
     public sealed class ScriptHost
     {
-        private IFtDSharp? _instance;
+        private object? _instance;
+        private Action? _onPhysicsTick;
+        private Action? _onStop;
+        private IProviderScope? _scope;
         private string? _hash;
         private string? _lastError;
-        private IScriptContext? _context;
         private static readonly MetadataReference[] DefaultReferences = BuildDefaultReferences();
-        private const string ScriptPrelude = "#line 1\n";
+        private const string ScriptPrelude =
+            "global using System;\n" +
+            "global using System.Collections.Generic;\n" +
+            "global using System.Linq;\n" +
+            "global using UnityEngine;\n" +
+            "global using FtDSharp;\n" +
+            "global using static FtDSharp.Logging;\n" +
+            "#line 1\n";
 
         private static readonly ImmutableArray<DiagnosticAnalyzer> BannedApiAnalyzers =
             ImmutableArray.Create<DiagnosticAnalyzer>(new CSharpSymbolIsBannedAnalyzer());
@@ -89,15 +98,13 @@ namespace FtDSharp
                     options: new CSharpCompilationOptions(
                         OutputKind.DynamicallyLinkedLibrary,
                         optimizationLevel: OptimizationLevel.Release,
-                        allowUnsafe: false,
-                        usings: new[]
-                        {
-                            "System",
-                            "System.Collections.Generic",
-                            "System.Linq",
-                            "UnityEngine",
-                            "FtDSharp",
-                        }));
+                        allowUnsafe: false));
+
+                if (ContainsDynamicKeyword(syntaxTree))
+                {
+                    _lastError = "Banned API usage:\nDynamic dispatch is not allowed.";
+                    return (false, diagnosticsList.ToArray());
+                }
 
                 var validationDiags = RunBannedApiAnalysis(compilation);
                 if (validationDiags.Length > 0)
@@ -130,7 +137,7 @@ namespace FtDSharp
             }
         }
 
-        internal bool Instantiate(string hash, IScriptContext? ctx)
+        internal bool Instantiate(string hash, IProviderScope? scope)
         {
             _lastError = null;
 
@@ -142,66 +149,105 @@ namespace FtDSharp
 
             try
             {
-                var type = assembly!.GetTypes().FirstOrDefault(t => typeof(IFtDSharp).IsAssignableFrom(t));
+                var type = assembly!
+                    .GetTypes()
+                    .FirstOrDefault(HasAttributedEntryPointMethods);
+
                 if (type == null)
                 {
-                    _lastError = "No class implementing IFtDSharp found. Your script must have a class that implements IFtDSharp.";
+                    _lastError = "No public class with entry point methods found. Your script must declare at least one method with [OnPhysicsTick], [OnStart], or [OnStop].";
                     return false;
                 }
 
-                using (ctx != null ? ScriptApi.PushContext(ctx) : null)
+                var validationError = ValidateEntryPointMethods(type);
+                if (validationError != null)
                 {
-                    _instance = (IFtDSharp)Activator.CreateInstance(type)!;
+                    _lastError = validationError;
+                    return false;
+                }
+
+                var tickMethod = FindEntryPointMethod<OnPhysicsTickAttribute>(type);
+                var startMethod = FindEntryPointMethod<OnStartAttribute>(type);
+                var stopMethod = FindEntryPointMethod<OnStopAttribute>(type);
+
+                using (scope != null ? ScriptContext.Push(scope) : null)
+                {
+                    _instance = Activator.CreateInstance(type)!;
+                    _onPhysicsTick = CreateEntryPointDelegate(_instance, tickMethod);
+                    _onStop = CreateEntryPointDelegate(_instance, stopMethod);
+                    CreateEntryPointDelegate(_instance, startMethod)?.Invoke();
                 }
 
                 _hash = hash;
-                _context = ctx;
+                _scope = scope;
                 return true;
             }
             catch (Exception ex)
             {
-                _lastError = $"Error instantiating script: {ex.Message}";
+                _lastError = $"Error instantiating script: {ex.GetBaseException().Message}";
                 _instance = null;
+                _onPhysicsTick = null;
+                _onStop = null;
+                _scope = null;
                 _hash = null;
                 return false;
             }
         }
 
-        internal void Tick(IScriptContext ctx)
+        internal void Tick(IProviderScope scope)
         {
             if (_instance == null) return;
 
-            _context = ctx;
+            using var currentScope = ScriptContext.Push(scope);
 
-            using var scope = ScriptApi.PushContext(ctx);
-
-            var profile = AbstractModule<FtDSharpProfiler>.Instance.ScriptExecution;
-            var startTime = profile.Start();
+            var profile = AbstractModule<FtDSharpProfiler>.Instance?.ScriptExecution;
+            var startTime = profile?.Start() ?? 0;
             try
             {
-                _instance.Update();
+                _onPhysicsTick?.Invoke();
             }
             catch (Exception ex)
             {
-                ctx.Log.Error($"Error during script execution: {ex.Message}\n{ex.StackTrace}");
+                scope.Log.Error($"Error during script execution: {ex.Message}\n{ex.StackTrace}");
                 Deactivate();
             }
             finally
             {
-                profile.Finish(startTime);
+                profile?.Finish(startTime);
             }
         }
 
         public void Deactivate()
         {
-            // Dispose of anything that needs disposing
-            if (_instance is IDisposable disposable)
+            if (_instance == null) return;
+
+            try
             {
-                disposable.Dispose();
+                if (_onStop != null && _scope != null)
+                {
+                    using var ctx = ScriptContext.Push(_scope);
+                    _onStop.Invoke();
+                }
             }
-            _instance?.OnStop();
-            _instance = null;
-            _hash = null;
+            catch { /* swallow — script is being torn down */ }
+            finally
+            {
+                if (_instance is IDisposable disposable)
+                {
+                    try { disposable.Dispose(); } catch { }
+                }
+
+                if (_scope is IDisposable disposableScope)
+                {
+                    disposableScope.Dispose();
+                }
+
+                _instance = null;
+                _onPhysicsTick = null;
+                _onStop = null;
+                _scope = null;
+                _hash = null;
+            }
         }
 
         internal static string ComputeHash(string input)
@@ -226,43 +272,62 @@ namespace FtDSharp
             return diagnostics.Where(static d => d.Id is "RS0030" or "RS0031").ToImmutableArray();
         }
 
+        private static bool ContainsDynamicKeyword(SyntaxTree syntaxTree)
+        {
+            return syntaxTree.GetRoot()
+                .DescendantTokens()
+                .Any(static token => string.Equals(token.Text, "dynamic", StringComparison.Ordinal));
+        }
+
         private static MetadataReference[] BuildDefaultReferences()
         {
-            Assembly[] candidates =
+            static void AddReference(List<MetadataReference> refs, HashSet<string> seen, string? location)
             {
-                typeof(object).Assembly,
-                typeof(Enumerable).Assembly,
-                typeof(Console).Assembly,
-                typeof(Uri).Assembly,
-                typeof(IFtDSharp).Assembly,
-                typeof(Vector3).Assembly,
-                typeof(ScriptHost).Assembly
-            };
-
-            var refs = new List<MetadataReference>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var asm in candidates)
-            {
-                var location = asm.Location;
-                if (string.IsNullOrEmpty(location) && asm == typeof(ScriptHost).Assembly)
+                if (string.IsNullOrWhiteSpace(location))
                 {
-                    var fallbackPath = Path.Combine(ModInfo.ModPath, "FtDSharp.dll");
-                    if (File.Exists(fallbackPath))
-                    {
-                        location = fallbackPath;
-                    }
+                    return;
                 }
-                if (string.IsNullOrEmpty(location)) continue;
-                if (!seen.Add(location)) continue;
+
+                if (!seen.Add(location))
+                {
+                    return;
+                }
+
                 try
                 {
                     refs.Add(MetadataReference.CreateFromFile(location));
                 }
                 catch (Exception ex)
                 {
-                    UnityEngine.Debug.LogWarning($"[FtDSharp] Failed to add reference '{asm.FullName}': {ex.Message}");
+                    UnityEngine.Debug.LogWarning($"[FtDSharp] Failed to add reference '{location}': {ex.Message}");
                 }
+            }
+
+            Assembly[] candidates =
+            {
+                typeof(object).Assembly,
+                typeof(Enumerable).Assembly,
+                typeof(Console).Assembly,
+                typeof(Uri).Assembly,
+                typeof(OnPhysicsTickAttribute).Assembly,
+                typeof(ScriptHost).Assembly,
+                typeof(Vector3).Assembly
+            };
+
+            var refs = new List<MetadataReference>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") is string trustedPlatformAssemblies)
+            {
+                foreach (var reference in trustedPlatformAssemblies.Split(Path.PathSeparator))
+                {
+                    AddReference(refs, seen, reference);
+                }
+            }
+
+            foreach (var asm in candidates)
+            {
+                AddReference(refs, seen, asm.Location);
             }
 
             var coreDir = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
@@ -272,25 +337,84 @@ namespace FtDSharp
                 Path.Combine(coreDir, "System.dll"),
                 Path.Combine(coreDir, "System.Core.dll"),
                 Path.Combine(coreDir, "System.Xml.dll"),
-                Path.Combine(coreDir, "netstandard.dll"),
-                Path.Combine(coreDir, "FtDSharp.dll")
+                Path.Combine(coreDir, "netstandard.dll")
             };
 
             foreach (var reference in fallback)
             {
-                if (!File.Exists(reference)) continue;
-                if (!seen.Add(reference)) continue;
-                try
+                if (File.Exists(reference))
                 {
-                    refs.Add(MetadataReference.CreateFromFile(reference));
-                }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogWarning($"[FtDSharp] Failed to add fallback reference '{reference}': {ex.Message}");
+                    AddReference(refs, seen, reference);
                 }
             }
 
             return refs.ToArray();
+        }
+
+        private static bool HasAttributedEntryPointMethods(Type type)
+        {
+            if (!type.IsClass || !type.IsPublic)
+            {
+                return false;
+            }
+
+            return GetAttributedEntryPointMethods(type).Length > 0;
+        }
+
+        private static MethodInfo? FindEntryPointMethod<TAttribute>(Type type)
+            where TAttribute : Attribute
+        {
+            return type
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(method => method.GetCustomAttribute<TAttribute>() != null && IsValidEntryPointMethod(method));
+        }
+
+        private static string? ValidateEntryPointMethods(Type type)
+        {
+            foreach (var method in GetAttributedEntryPointMethods(type))
+            {
+                if (IsValidEntryPointMethod(method))
+                {
+                    continue;
+                }
+
+                return $"Entry point method '{type.FullName}.{method.Name}' must be a public instance parameterless void method.";
+            }
+
+            return null;
+        }
+
+        private static MethodInfo[] GetAttributedEntryPointMethods(Type type)
+        {
+            return type
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(HasEntryPointAttribute)
+                .ToArray();
+        }
+
+        private static bool IsValidEntryPointMethod(MethodInfo method)
+        {
+            return method.IsPublic
+                && !method.IsStatic
+                && method.ReturnType == typeof(void)
+                && method.GetParameters().Length == 0;
+        }
+
+        private static bool HasEntryPointAttribute(MethodInfo method)
+        {
+            return method.GetCustomAttribute<OnPhysicsTickAttribute>() != null
+                || method.GetCustomAttribute<OnStartAttribute>() != null
+                || method.GetCustomAttribute<OnStopAttribute>() != null;
+        }
+
+        private static Action? CreateEntryPointDelegate(object instance, MethodInfo? method)
+        {
+            if (method == null)
+            {
+                return null;
+            }
+
+            return (Action)Delegate.CreateDelegate(typeof(Action), instance, method);
         }
     }
 }

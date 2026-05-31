@@ -18,13 +18,13 @@ namespace FtDSharp
         /// Includes weapons on subconstructs (turrets, spinblocks, etc).
         /// </summary>
         public static IReadOnlyList<IWeapon> All =>
-            Game.MainConstruct?.Weapons ?? Array.Empty<IWeapon>();
+            ScriptContext.Current?.Weapons.Weapons ?? Array.Empty<IWeapon>();
 
         /// <summary>
         /// Gets all turrets on the current construct.
         /// </summary>
         public static IReadOnlyList<ITurret> Turrets =>
-            Game.MainConstruct?.Turrets ?? Array.Empty<ITurret>();
+            ScriptContext.Current?.Weapons.Turrets ?? Array.Empty<ITurret>();
 
         /// <summary>
         /// Gets all APS (Advanced Projectile System) weapons.
@@ -65,6 +65,16 @@ namespace FtDSharp
         /// Gets all missile controllers.
         /// </summary>
         public static IReadOnlyList<IMissileController> MissileControllers => GetByInterface<IMissileController>();
+
+        /// <summary>Creates a weapon controller for a turret and its sub-weapons.</summary>
+        public static IWeaponController CreateController(ITurret turret) =>
+            ScriptContext.Current?.Weapons.CreateController(turret)
+            ?? throw new InvalidOperationException("No weapons provider available.");
+
+        /// <summary>Creates a weapon controller for a list of weapons/turrets.</summary>
+        public static IWeaponController CreateController(IEnumerable<IWeapon> weapons) =>
+            ScriptContext.Current?.Weapons.CreateController(weapons)
+            ?? throw new InvalidOperationException("No weapons provider available.");
 
         private static IReadOnlyList<T> GetByInterface<T>() where T : class, IWeapon
         {

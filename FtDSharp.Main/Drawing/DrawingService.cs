@@ -19,7 +19,7 @@ namespace FtDSharp
         private static DrawingService? _instance;
         public static DrawingService Instance => _instance ??= new DrawingService();
 
-        private readonly List<Figure> _figures = new List<Figure>();
+        private readonly Dictionary<object, List<IDrawFigure>> _buckets = new Dictionary<object, List<IDrawFigure>>();
         private readonly object _lock = new();
         private ulong _lastGameFrame;
 
@@ -29,19 +29,36 @@ namespace FtDSharp
             GameEvents.FixedUpdateEvent.RegWithEvent(UpdateFigureLifetimes);
         }
 
-        public void AddFigure(Figure figure)
+        public void AddFigure(object owner, IDrawFigure figure)
         {
             lock (_lock)
             {
-                _figures.Add(figure);
+                if (!_buckets.TryGetValue(owner, out var figures))
+                {
+                    figures = new List<IDrawFigure>();
+                    _buckets[owner] = figures;
+                }
+
+                figures.Add(figure);
             }
         }
 
-        public void Clear()
+        public void Clear(object owner)
         {
             lock (_lock)
             {
-                _figures.Clear();
+                if (_buckets.TryGetValue(owner, out var figures))
+                {
+                    figures.Clear();
+                }
+            }
+        }
+
+        public void RemoveOwner(object owner)
+        {
+            lock (_lock)
+            {
+                _buckets.Remove(owner);
             }
         }
 
@@ -49,9 +66,12 @@ namespace FtDSharp
         {
             lock (_lock)
             {
-                foreach (var figure in _figures)
+                foreach (var figures in _buckets.Values)
                 {
-                    figure.DrawFigure();
+                    foreach (var figure in figures)
+                    {
+                        figure.DrawFigure();
+                    }
                 }
             }
         }
@@ -64,11 +84,14 @@ namespace FtDSharp
 
             lock (_lock)
             {
-                for (int i = _figures.Count - 1; i >= 0; i--)
+                foreach (var figures in _buckets.Values)
                 {
-                    if (_figures[i].UpdateExpiration(gameAdvanced))
+                    for (int i = figures.Count - 1; i >= 0; i--)
                     {
-                        _figures.RemoveAt(i);
+                        if (figures[i].UpdateExpiration(gameAdvanced))
+                        {
+                            figures.RemoveAt(i);
+                        }
                     }
                 }
             }

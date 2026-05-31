@@ -1,14 +1,12 @@
-using FtDSharp;
-using static FtDSharp.Logging;
-using static FtDSharp.Game;
-
-public class MyScript : IFtDSharp
+public class MyScript
 {
-    public MyScript()
+    [OnStart]
+    public void Initialize()
     {
         Log("Script initialized.");
     }
 
+    [OnPhysicsTick]
     public void Update()
     {
         // Your logic here — runs every game tick (~40 Hz at 1x speed)

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Global usings to match the runtime compiler's injected prelude -->
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+    <Using Include="UnityEngine" />
+    <Using Include="FtDSharp" />
+    <Using Include="FtDSharp.Logging" Static="True" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="bin/**" />
+    <Compile Remove="obj/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FtDSharp.API">
+      <HintPath>..\FtDSharp.API.dll</HintPath>
+    </Reference>
+    <!-- Blocks.* accessors are generated into the main mod assembly -->
+    <Reference Include="FtDSharp">
+      <HintPath>..\FtDSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\References\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

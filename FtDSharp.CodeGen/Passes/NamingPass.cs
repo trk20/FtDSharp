@@ -4,30 +4,27 @@ using Serilog;
 
 namespace FtDSharp.CodeGen.Passes;
 
-public partial class NamingPass : IBlockPass
+public partial class NamingPass
 {
     private static readonly Regex PrefixPattern = GetPrefixRegex();
-    private readonly List<string> _allCollisions = [];
 
-    public IReadOnlyList<string> AllCollisions => _allCollisions;
-
-    public void Process(List<BlockDefinition> blocks)
+    public static void Run(IReadOnlyList<BlockDefinition> blocks)
     {
         Log.Debug("Applying naming transformations for {Count} blocks...", blocks.Count);
-        _allCollisions.Clear();
+        var collisions = new List<string>();
 
         foreach (var block in blocks)
-            ProcessBlock(block);
+            ProcessBlock(block, collisions);
 
-        if (_allCollisions.Count > 0)
+        if (collisions.Count > 0)
         {
-            Log.Warning("{Count} naming collisions detected", _allCollisions.Count);
-            foreach (var collision in _allCollisions)
+            Log.Warning("{Count} naming collisions detected", collisions.Count);
+            foreach (var collision in collisions)
                 Log.Debug("{Collision}", collision);
         }
     }
 
-    private void ProcessBlock(BlockDefinition block)
+    private static void ProcessBlock(BlockDefinition block, List<string> collisions)
     {
         var scope = new Utils.NameScope();
 
@@ -38,7 +35,7 @@ public partial class NamingPass : IBlockPass
 
             if (Overrides.ShouldSkip(candidate))
             {
-                prop.Name = $"__SKIP__{candidate}";
+                prop.IsExcluded = true;
                 continue;
             }
 
@@ -46,9 +43,9 @@ public partial class NamingPass : IBlockPass
         }
 
         foreach (var collision in scope.Collisions)
-            _allCollisions.Add($"[{block.ClassName}] {collision}");
+            collisions.Add($"[{block.ClassName}] {collision}");
 
-        block.AllProperties.RemoveAll(p => p.Name.StartsWith("__SKIP__"));
+        block.AllProperties.RemoveAll(p => p.IsExcluded);
     }
 
     [GeneratedRegex(@"^(?<prefix>[A-Za-z]+)_", RegexOptions.Compiled)]

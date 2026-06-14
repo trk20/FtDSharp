@@ -3,37 +3,29 @@ using Serilog;
 
 namespace FtDSharp.CodeGen.Passes;
 
-public class StoreOptimizationPass : IBlockPass
+public static class StoreOptimizationPass
 {
-    private readonly Dictionary<Type, string> _concreteStores;
-    private readonly Dictionary<Type, string> _interfaceStores;
-
-    public StoreOptimizationPass(Dictionary<Type, string> concreteStores, Dictionary<Type, string> interfaceStores)
-    {
-        _concreteStores = concreteStores;
-        _interfaceStores = interfaceStores;
-    }
-
-    public void Process(List<BlockDefinition> blocks)
+    public static void Run(
+        IReadOnlyList<BlockDefinition> blocks,
+        IReadOnlyDictionary<Type, string> concreteStores,
+        IReadOnlyDictionary<Type, string> interfaceStores)
     {
         Log.Debug("Assigning block stores for {Count} blocks...", blocks.Count);
         int exactCount = 0, interfaceCount = 0, parentCount = 0, fallbackCount = 0;
 
         foreach (var block in blocks)
         {
-            // 1. Check for exact concrete type match
-            if (_concreteStores.TryGetValue(block.GameType, out var storeName))
+            if (concreteStores.TryGetValue(block.GameType, out var storeName))
             {
                 block.StoreBinding = new StoreBinding(storeName, IsInterfaceStore: false);
                 exactCount++;
                 continue;
             }
 
-            // 2. Check if block implements an interface with a store
             bool found = false;
             foreach (var iface in block.GameType.GetInterfaces())
             {
-                if (_interfaceStores.TryGetValue(iface, out storeName))
+                if (interfaceStores.TryGetValue(iface, out storeName))
                 {
                     block.StoreBinding = new StoreBinding(storeName, IsInterfaceStore: true);
                     interfaceCount++;
@@ -43,11 +35,10 @@ public class StoreOptimizationPass : IBlockPass
             }
             if (found) continue;
 
-            // 3. Check parent class hierarchy for a store (filter required)
             var parentType = block.GameType.BaseType;
             while (parentType != null && parentType != typeof(object))
             {
-                if (_concreteStores.TryGetValue(parentType, out storeName))
+                if (concreteStores.TryGetValue(parentType, out storeName))
                 {
                     block.StoreBinding = new StoreBinding(storeName, IsInterfaceStore: false, RequiresTypeFilter: true);
                     parentCount++;

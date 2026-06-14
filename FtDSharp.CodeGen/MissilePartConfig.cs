@@ -31,8 +31,8 @@ public static class MissilePartConfig
             InterfaceName = "IFragWarhead",
             Parameters =
             [
-                new(0, "ConeAngle", "Frag cone angle in degrees (1-180)", min: 1, max: 180),
-                new(1, "ElevationOffset", "Frag elevation offset in degrees (-90 to 90)", min: -90, max: 90),
+                new(0, "ConeAngle", "Frag cone angle in degrees (1-180)"),
+                new(1, "ElevationOffset", "Frag elevation offset in degrees (-90 to 90)"),
             ]
         },
         new()
@@ -116,7 +116,9 @@ public static class MissilePartConfig
             InterfaceName = "ITurningThruster",
             Parameters =
             [
-                new(2, "MaxFuelPercentage", "Maximum fuel percentage to use"),
+                new(0, "StartDelay", "Activation delay in seconds before the turning thruster is used"),
+                new(1, "MaxFuelPercentage", "Maximum fuel percentage to use"),
+                new(2, "ActivationAngle", "Minimum turn angle in degrees before the thruster activates"),
             ]
         },
 
@@ -127,14 +129,35 @@ public static class MissilePartConfig
             InterfaceName = "IBeamRider",
             Parameters =
             [
-                new(0, "OursOnly", "Target our lasers only", isBool: true),
+                new(0, "AimAt", "Which lasers the beam rider should follow.", enumTypeName: "BeamRiderMode"),
+            ]
+        },
+        new()
+        {
+            GameType = typeof(MissileDesignatorReceiver),
+            InterfaceName = "IDesignatorReceiver",
+            Parameters =
+            [
+                new(0, "AimAt", "Which missile lasers the designator receiver should follow.", enumTypeName: "DesignatorReceiverMode"),
+            ]
+        },
+        new()
+        {
+            GameType = typeof(MissileWirelessGuidanceComponent),
+            InterfaceName = "IWirelessGuidance",
+            Parameters =
+            [
+                new(0, "SelfDestructWhenOverCapacity", "Self-destruct when the launchpad fires more missiles than it can hold", isBool: true),
             ]
         },
         new()
         {
             GameType = typeof(MissileAPNGuidance),
             InterfaceName = "IApnGuidance",
-            Parameters = [] // Indices not reliably extracted
+            Parameters =
+            [
+                new(0, "Gain", "APN guidance gain"),
+            ]
         },
         new()
         {
@@ -158,16 +181,13 @@ public static class MissilePartConfig
         {
             GameType = typeof(MissileSonar),
             InterfaceName = "ISonarSeeker",
-            Parameters = [] // MaximumAngleOffNose index unknown
+            Parameters = [] // MaximumAngleOffNose is hardcoded (60°), not a UI parameter
         },
         new()
         {
             GameType = typeof(MissileSimpleIRSeeker),
             InterfaceName = "ISimpleIrSeeker",
-            Parameters =
-            [
-                new(3, "MinDecoyStrengthMultiplier", "Minimum decoy strength multiplier"),
-            ]
+            Parameters = [] // MinDecoyStrengthMultiplier is a fixed override, not a UI parameter
         },
         new()
         {
@@ -183,7 +203,7 @@ public static class MissilePartConfig
         {
             GameType = typeof(MissileSignalProcessor),
             InterfaceName = "ISignalProcessor",
-            Parameters = [] // Indices not reliably extracted
+            Parameters = [] // No UI parameters; factors come from missile size constants
         },
 
         // ===== UTILITY =====
@@ -229,7 +249,11 @@ public static class MissilePartConfig
         {
             GameType = typeof(MissileInterceptor),
             InterfaceName = "IInterceptor",
-            Parameters = [] // Indices not reliably extracted
+            Parameters =
+            [
+                new(0, "TargetType", "Which projectile types to intercept", enumTypeName: "InterceptorTargetType"),
+                new(1, "PreferredTarget", "How interceptors choose their target", enumTypeName: "InterceptorPreferredTarget"),
+            ]
         },
         new()
         {
@@ -250,6 +274,16 @@ public static class MissilePartConfig
             Parameters =
             [
                 new(0, "MinimumAltitude", "Minimum altitude threshold"),
+            ]
+        },
+        new()
+        {
+            GameType = typeof(MissileProximityFuse),
+            InterfaceName = "IProximityFuse",
+            Parameters =
+            [
+                new(0, "Range", "Detonation range in meters"),
+                new(1, "Angle", "Detection angle in degrees"),
             ]
         },
 
@@ -277,7 +311,7 @@ public static class MissilePartConfig
             InterfaceName = "IMirvEjector",
             Parameters =
             [
-                new(8, "SpeedInheritance", "Speed inheritance factor (0-1)"),
+                new(0, "SpeedInheritance", "Speed inheritance factor (0-1)"),
             ]
         },
     ];
@@ -292,7 +326,57 @@ public static class MissilePartConfig
             { 0, "OurLasers" },
             { 1, "OurVehiclesLasers" },
         }),
+        new("DesignatorReceiverMode", new Dictionary<float, string>
+        {
+            { 0, "OurLasers" },
+            { 1, "OurVehiclesLasers" },
+            { 2, "OurTeamsLasers" },
+        }),
+        new("InterceptorTargetType", new Dictionary<float, string>
+        {
+            { 0, "AllProjectiles" },
+            { 1, "MissilesOnly" },
+            { 2, "CramsOnly" },
+        }),
+        new("InterceptorPreferredTarget", new Dictionary<float, string>
+        {
+            { 0, "CoordinateTargets" },
+            { 1, "PreferCiwsTarget" },
+        }),
     ];
+
+    public static void Validate() => ValidateDefinitions(Definitions, Enums);
+
+    public static void ValidateDefinitions(
+        IEnumerable<MissilePartDefinition> definitions,
+        IEnumerable<GeneratedEnum> enums)
+    {
+        var enumNames = enums.Select(e => e.Name).ToHashSet(StringComparer.Ordinal);
+        var referencedEnumNames = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var definition in definitions)
+        {
+            foreach (var parameter in definition.Parameters)
+            {
+                if (parameter.EnumTypeName == null)
+                    continue;
+
+                if (!enumNames.Contains(parameter.EnumTypeName))
+                {
+                    throw new InvalidOperationException(
+                        $"Missile parameter '{parameter.PropertyName}' on '{definition.InterfaceName}' references unknown enum '{parameter.EnumTypeName}'.");
+                }
+
+                referencedEnumNames.Add(parameter.EnumTypeName);
+            }
+        }
+
+        foreach (var enumName in enumNames)
+        {
+            if (!referencedEnumNames.Contains(enumName))
+                throw new InvalidOperationException($"Missile enum '{enumName}' is generated but no parameter references it.");
+        }
+    }
 }
 
 /// <summary>
@@ -302,7 +386,6 @@ public class MissilePartDefinition
 {
     public Type GameType { get; set; } = typeof(object);
     public string InterfaceName { get; set; } = "";
-    public string? InheritFrom { get; set; }
     public List<MissileParameterDefinition> Parameters { get; set; } = [];
     public List<DirectPropertyDefinition> DirectProperties { get; set; } = [];
 }
@@ -315,20 +398,18 @@ public class MissileParameterDefinition
     public int Index { get; set; }
     public string PropertyName { get; set; }
     public string Description { get; set; }
-    public float? Min { get; set; }
-    public float? Max { get; set; }
     public bool IsReadOnly { get; set; }
     public string? EnumTypeName { get; set; }
     public bool IsBool { get; set; }
 
+    public string TypeName => IsBool ? "bool" : (EnumTypeName ?? "float");
+
     public MissileParameterDefinition(int index, string propertyName, string description = "",
-        float? min = null, float? max = null, bool isReadOnly = false, string? enumTypeName = null, bool isBool = false)
+        bool isReadOnly = false, string? enumTypeName = null, bool isBool = false)
     {
         Index = index;
         PropertyName = propertyName;
         Description = description;
-        Min = min;
-        Max = max;
         IsReadOnly = isReadOnly;
         EnumTypeName = enumTypeName;
         IsBool = isBool;

@@ -19,6 +19,7 @@ public class PropertyDefinition
     public PropertyInfo? SourceProperty { get; set; }
     public Type? DeclaringType { get; set; }
     public string? DataPackageName { get; set; }
+    public bool IsExcluded { get; set; }
 
     public override string ToString() => $"{Name} ({TypeName}) -> {AccessorPath}";
 }

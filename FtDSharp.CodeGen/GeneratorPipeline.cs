@@ -1,7 +1,6 @@
 using FtDSharp.CodeGen.Generators;
-using FtDSharp.CodeGen.Models;
 using FtDSharp.CodeGen.Passes;
-using FtDSharp.CodeGen.Scanner;
+using FtDSharp.CodeGen.Utils;
 using Serilog;
 
 namespace FtDSharp.CodeGen;
@@ -13,33 +12,10 @@ public class GeneratorPipeline
         Log.Debug("API output: {Path}", Path.GetFullPath(apiOutputPath));
         Log.Debug("Facade output: {Path}", Path.GetFullPath(facadeOutputPath));
 
-        CleanupOutputDirs(apiOutputPath, facadeOutputPath);
+        GeneratedOutputWriter.CleanGeneratedFiles(apiOutputPath);
+        GeneratedOutputWriter.CleanGeneratedFiles(facadeOutputPath);
 
-        Log.Debug("Fetching block types and block stores...");
-        var rawBlocks = new BlockScanner().Scan(typeof(Block).Assembly);
-        var (concreteStores, interfaceStores) = new BlockStoreScanner().Scan();
-
-        Log.Debug("Found {Count} block types", rawBlocks.Count);
-        Log.Debug("Discovered {ConcreteCount} concrete + {InterfaceCount} interface BlockStore<T> properties",
-            concreteStores.Count, interfaceStores.Count);
-
-        Log.Debug("Building block definitions...");
-        var blocks = BuildInitialModel(rawBlocks);
-        Log.Debug("Created {Count} block definitions", blocks.Count);
-
-        Log.Debug("Running transformation stages...");
-
-        new HierarchyPass().Process(blocks);
-
-        new PropertyFlattenerPass().Process(rawBlocks, blocks);
-
-        new NamingPass().Process(blocks);
-
-        new LogicalInterfacePass().Process(blocks);
-
-        new StoreOptimizationPass(concreteStores, interfaceStores).Process(blocks);
-
-        new InheritanceFilterPass().Process(blocks);
+        var blocks = BlockPipeline.Run();
 
         var referencedAsParent = new HashSet<Type>();
         foreach (var block in blocks)
@@ -49,7 +25,7 @@ public class GeneratorPipeline
         }
 
         var blocksToGenerate = blocks
-            .Where(b => b.Properties.Any()
+            .Where(b => b.Surface.InterfaceProperties.Any()
                 || b.Parent != null
                 || b.ImplementedLogicalInterfaces.Any()
                 || referencedAsParent.Contains(b.GameType))
@@ -58,72 +34,63 @@ public class GeneratorPipeline
 
         Log.Debug("{Count} blocks will have code generated", blocksToGenerate.Count);
 
-        Log.Debug("Phase 4: Generating code...");
+        Log.Debug("Generating block code...");
         var renderer = new TemplateRenderer();
 
-        var logicalInterfacesCode = renderer.RenderLogicalInterfaces([.. LogicalInterfaces.Definitions], blocksToGenerate);
-        File.WriteAllText(Path.Combine(apiOutputPath, "LogicalInterfaces.g.cs"), logicalInterfacesCode);
+        GeneratedOutputWriter.Write(apiOutputPath, "LogicalInterfaces.g.cs",
+            renderer.RenderLogicalInterfaces([.. LogicalInterfaces.Definitions], blocksToGenerate));
 
         int totalProperties = 0;
         foreach (var block in blocksToGenerate)
         {
-            totalProperties += block.Properties.Count;
+            totalProperties += block.Surface.InterfaceProperties.Count;
 
-            var interfaceCode = renderer.RenderInterface(block);
-            File.WriteAllText(Path.Combine(apiOutputPath, $"I{block.ClassName}.g.cs"), interfaceCode);
+            GeneratedOutputWriter.Write(apiOutputPath, $"I{block.ClassName}.g.cs",
+                renderer.RenderInterface(block));
 
-            var facadeCode = renderer.RenderFacade(block);
-            File.WriteAllText(Path.Combine(facadeOutputPath, $"{block.ClassName}Facade.g.cs"), facadeCode);
+            GeneratedOutputWriter.Write(facadeOutputPath, $"{block.ClassName}Facade.g.cs",
+                renderer.RenderFacade(block));
         }
 
-        var factoryCode = renderer.RenderBlockFactory(blocksToGenerate);
-        File.WriteAllText(Path.Combine(facadeOutputPath, "BlockFactory.g.cs"), factoryCode);
+        GeneratedOutputWriter.Write(facadeOutputPath, "BlockFactory.g.cs",
+            renderer.RenderBlockFactory(blocksToGenerate));
 
-        var blocksInterfaceCode = renderer.RenderBlocksProviderInterface(blocksToGenerate);
-        File.WriteAllText(Path.Combine(apiOutputPath, "IBlocksProvider.g.cs"), blocksInterfaceCode);
+        GeneratedOutputWriter.Write(apiOutputPath, "IBlocksProvider.g.cs",
+            renderer.RenderBlocksProviderInterface(blocksToGenerate));
 
-        var blocksApiCode = renderer.RenderBlocksApi(blocksToGenerate);
-        File.WriteAllText(Path.Combine(apiOutputPath, "Blocks.g.cs"), blocksApiCode);
+        GeneratedOutputWriter.Write(apiOutputPath, "Blocks.g.cs",
+            renderer.RenderBlocksApi(blocksToGenerate));
 
-        var blocksProviderCode = renderer.RenderBlocksProviderImpl(blocksToGenerate);
-        File.WriteAllText(Path.Combine(facadeOutputPath, "BlocksProvider.g.cs"), blocksProviderCode);
+        GeneratedOutputWriter.Write(facadeOutputPath, "BlocksProvider.g.cs",
+            renderer.RenderBlocksProviderImpl(blocksToGenerate));
 
         Log.Information("Generated {BlockCount} interfaces/facades with {PropCount} total properties",
             blocksToGenerate.Count, totalProperties);
 
-        // ============ Missile Parts Generation ============
         GenerateMissileParts(renderer, apiOutputPath, facadeOutputPath);
     }
 
-    private void GenerateMissileParts(TemplateRenderer renderer, string apiOutputPath, string facadeOutputPath)
+    private static void GenerateMissileParts(TemplateRenderer renderer, string apiOutputPath, string facadeOutputPath)
     {
         Log.Debug("Generating missile part interfaces and facades...");
+        MissilePartConfig.Validate();
 
         var partsOutputPath = Path.Combine(apiOutputPath, "MissileParts");
         var partFacadesOutputPath = Path.Combine(facadeOutputPath, "MissileParts");
-        Directory.CreateDirectory(partsOutputPath);
-        Directory.CreateDirectory(partFacadesOutputPath);
+        GeneratedOutputWriter.CleanGeneratedFiles(partsOutputPath);
+        GeneratedOutputWriter.CleanGeneratedFiles(partFacadesOutputPath);
 
-        // Clean up old generated files
-        foreach (var file in Directory.GetFiles(partsOutputPath, "*.g.cs"))
-            File.Delete(file);
-        foreach (var file in Directory.GetFiles(partFacadesOutputPath, "*.g.cs"))
-            File.Delete(file);
-
-        // Filter to parts with definitions
         var partsToGenerate = MissilePartConfig.Definitions
             .Where(d => !MissilePartConfig.SkipComponentNames.Contains(d.GameType.Name))
             .ToList();
 
-        // Generate enums
         if (MissilePartConfig.Enums.Any())
         {
-            var enumsCode = renderer.RenderMissilePartEnums([.. MissilePartConfig.Enums]);
-            File.WriteAllText(Path.Combine(partsOutputPath, "MissilePartEnums.g.cs"), enumsCode);
+            GeneratedOutputWriter.Write(partsOutputPath, "MissilePartEnums.g.cs",
+                renderer.RenderMissilePartEnums([.. MissilePartConfig.Enums]));
             Log.Debug("Generated {Count} missile part enums", MissilePartConfig.Enums.Count);
         }
 
-        // Generate interfaces and facades for each part
         int partCount = 0;
         int paramCount = 0;
         foreach (var part in partsToGenerate)
@@ -131,42 +98,19 @@ public class GeneratorPipeline
             partCount++;
             paramCount += part.Parameters.Count;
 
-            var interfaceCode = renderer.RenderMissilePartInterface(part);
-            File.WriteAllText(Path.Combine(partsOutputPath, $"{part.InterfaceName}.g.cs"), interfaceCode);
+            GeneratedOutputWriter.Write(partsOutputPath, $"{part.InterfaceName}.g.cs",
+                renderer.RenderMissilePartInterface(part));
 
-            var facadeCode = renderer.RenderMissilePartFacade(part);
-            var className = part.InterfaceName.StartsWith('I')
-                ? part.InterfaceName[1..]
-                : part.InterfaceName;
-            File.WriteAllText(Path.Combine(partFacadesOutputPath, $"{className}Facade.g.cs"), facadeCode);
+            var className = MissilePartNaming.FacadeClassName(part.InterfaceName);
+            GeneratedOutputWriter.Write(partFacadesOutputPath, $"{className}Facade.g.cs",
+                renderer.RenderMissilePartFacade(part));
         }
 
-        // Generate factory
-        var factoryCode = renderer.RenderMissilePartFactory(partsToGenerate);
-        File.WriteAllText(Path.Combine(partFacadesOutputPath, "MissilePartFactory.g.cs"), factoryCode);
+        GeneratedOutputWriter.Write(partFacadesOutputPath, "MissilePartFactory.g.cs",
+            renderer.RenderMissilePartFactory(partsToGenerate));
 
         Log.Information("Generated {PartCount} missile part interfaces/facades with {ParamCount} total parameters",
             partCount, paramCount);
     }
 
-    private static void CleanupOutputDirs(params string[] paths)
-    {
-        foreach (var path in paths)
-        {
-            Directory.CreateDirectory(path);
-            foreach (var file in Directory.GetFiles(path, "*.g.cs"))
-                File.Delete(file);
-        }
-    }
-
-    private static List<BlockDefinition> BuildInitialModel(List<RawBlockInfo> rawBlocks)
-    {
-        return [.. rawBlocks
-            .Select(rb => new BlockDefinition
-            {
-                GameType = rb.GameType,
-                ClassName = Overrides.ApplyClassRename(rb.GameType.Name)
-            })
-        ];
-    }
 }

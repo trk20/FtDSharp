@@ -3,16 +3,16 @@ using Serilog;
 
 namespace FtDSharp.CodeGen.Passes;
 
-public class LogicalInterfacePass : IBlockPass
+public static class LogicalInterfacePass
 {
-    public void Process(List<BlockDefinition> blocks)
+    public static void Run(IReadOnlyList<BlockDefinition> blocks)
     {
         Log.Debug("Determining interface implementations for {Count} blocks...", blocks.Count);
         foreach (var block in blocks)
             DetermineLogicalInterfaces(block);
     }
 
-    private void DetermineLogicalInterfaces(BlockDefinition block)
+    private static void DetermineLogicalInterfaces(BlockDefinition block)
     {
         var allPropNames = new HashSet<string>(block.AllProperties.Select(p => p.Name));
         var directInterfaces = new List<string>();
@@ -37,21 +37,5 @@ public class LogicalInterfacePass : IBlockPass
         }
 
         block.ImplementedLogicalInterfaces = LogicalInterfaces.ExpandWithParentInterfaces(directInterfaces);
-    }
-
-    public static HashSet<string> GetLogicalInterfacePropertyNames(BlockDefinition block)
-    {
-        var result = new HashSet<string>();
-
-        foreach (var logicalName in block.ImplementedLogicalInterfaces)
-        {
-            var def = LogicalInterfaces.Definitions.FirstOrDefault(d => d.InterfaceName == logicalName);
-            if (def == null) continue;
-
-            foreach (var propName in def.PropertyNames)
-                result.Add(propName);
-        }
-
-        return result;
     }
 }

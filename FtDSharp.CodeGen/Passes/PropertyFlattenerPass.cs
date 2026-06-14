@@ -5,11 +5,10 @@ using Serilog;
 
 namespace FtDSharp.CodeGen.Passes;
 
-public class PropertyFlattenerPass
+public static class PropertyFlattenerPass
 {
-    public void Process(List<RawBlockInfo> rawBlocks, List<BlockDefinition> blocks)
+    public static void Run(IReadOnlyList<RawBlockInfo> rawBlocks, IReadOnlyList<BlockDefinition> blocks)
     {
-
         Log.Debug("Processing raw properties for {Count} blocks...", rawBlocks.Count);
         var blocksByType = blocks.ToDictionary(b => b.GameType, b => b);
 
@@ -27,7 +26,7 @@ public class PropertyFlattenerPass
         }
     }
 
-    private PropertyDefinition? ConvertToPropertyDefinition(RawPropertyInfo raw, Type declaringBlockType)
+    private static PropertyDefinition? ConvertToPropertyDefinition(RawPropertyInfo raw, Type declaringBlockType)
     {
         bool hasSetter = raw.IsDataPackageProperty &&
             raw.HasUserEditable &&

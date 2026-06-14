@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FtDSharp.API\FtDSharp.API.csproj" />
+    <ProjectReference Include="..\FtDSharp.CodeGen\FtDSharp.CodeGen.csproj" />
     <ProjectReference Include="..\FtDSharp.csproj" />
   </ItemGroup>
 

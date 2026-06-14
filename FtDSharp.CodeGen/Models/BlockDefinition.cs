@@ -10,9 +10,33 @@ public class BlockDefinition
     public string? ParentInterfaceName => Parent?.InterfaceName;
 
     public List<string> ImplementedLogicalInterfaces { get; set; } = [];
-    public List<PropertyDefinition> Properties { get; set; } = [];
     public List<PropertyDefinition> AllProperties { get; set; } = [];
     public StoreBinding? StoreBinding { get; set; }
 
-    public override string ToString() => $"{ClassName} ({Properties.Count} unique, {AllProperties.Count} total props)";
+    /// <summary>
+    /// Render projection populated by <see cref="Passes.BlockSurfaceRules.ApplyAll"/>.
+    /// </summary>
+    public BlockRenderSurface Surface { get; private set; } = EmptySurface;
+
+    private static readonly BlockRenderSurface EmptySurface = new();
+
+    internal void SetSurface(BlockRenderSurface surface) => Surface = surface;
+
+    public HashSet<string> GetInheritedPropertyNames()
+    {
+        var inherited = new HashSet<string>();
+        var current = Parent;
+
+        while (current != null)
+        {
+            foreach (var prop in current.AllProperties)
+                inherited.Add(prop.Name);
+            current = current.Parent;
+        }
+
+        return inherited;
+    }
+
+    public override string ToString() =>
+        $"{ClassName} ({Surface.InterfaceProperties.Count} unique, {AllProperties.Count} total props)";
 }

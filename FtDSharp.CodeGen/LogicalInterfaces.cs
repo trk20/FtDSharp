@@ -2,6 +2,8 @@ using BrilliantSkies.Blocks.Ai.WeaponControl;
 using BrilliantSkies.Constructs.Blocks.Sets.Unsorted.ModulesForPropulsionAndControl;
 using BrilliantSkies.Ftd.Missiles.Ui;
 
+using FtDSharp.CodeGen.Models;
+
 namespace FtDSharp.CodeGen;
 
 public static class LogicalInterfaces
@@ -152,6 +154,12 @@ public static class LogicalInterfaces
         }
     ];
 
+    static LogicalInterfaces()
+    {
+        foreach (var definition in Definitions)
+            definition.FinalizePropertyNames();
+    }
+
     public static HashSet<string> GetAllLogicalPropertyNames()
     {
         var result = new HashSet<string>();
@@ -160,6 +168,23 @@ public static class LogicalInterfaces
             foreach (var prop in def.PropertyNames)
                 result.Add(prop);
         }
+        return result;
+    }
+
+    public static HashSet<string> GetLogicalInterfacePropertyNames(BlockDefinition block)
+    {
+        var result = new HashSet<string>();
+
+        foreach (var logicalName in block.ImplementedLogicalInterfaces)
+        {
+            var def = Definitions.FirstOrDefault(d => d.InterfaceName == logicalName);
+            if (def == null)
+                continue;
+
+            foreach (var propName in def.PropertyNames)
+                result.Add(propName);
+        }
+
         return result;
     }
 
@@ -194,9 +219,15 @@ public class LogicalInterfaceDefinition
     public string? RequiredDataPackagePattern { get; set; }
 
     private string[] _propertyNames = [];
+
     public string[] PropertyNames
     {
-        get => [.. _propertyNames.Select(p => Overrides.ApplyRename(p, RequiredDataPackagePattern))];
+        get => _propertyNames;
         set => _propertyNames = value;
+    }
+
+    internal void FinalizePropertyNames()
+    {
+        _propertyNames = [.. _propertyNames.Select(p => Overrides.ApplyRename(p, RequiredDataPackagePattern))];
     }
 }

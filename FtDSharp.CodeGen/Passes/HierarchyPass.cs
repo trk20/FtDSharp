@@ -3,9 +3,9 @@ using Serilog;
 
 namespace FtDSharp.CodeGen.Passes;
 
-public class HierarchyPass : IBlockPass
+public static class HierarchyPass
 {
-    public void Process(List<BlockDefinition> blocks)
+    public static void Run(IReadOnlyList<BlockDefinition> blocks)
     {
         Log.Debug("Linking parent types for {Count} blocks...", blocks.Count);
         var blocksByType = blocks.ToDictionary(b => b.GameType, b => b);
@@ -23,20 +23,5 @@ public class HierarchyPass : IBlockPass
                 current = current.BaseType;
             }
         }
-    }
-
-    public static HashSet<string> GetInheritedPropertyNames(BlockDefinition block)
-    {
-        var inherited = new HashSet<string>();
-        var current = block.Parent;
-
-        while (current != null)
-        {
-            foreach (var prop in current.AllProperties)
-                inherited.Add(prop.Name);
-            current = current.Parent;
-        }
-
-        return inherited;
     }
 }

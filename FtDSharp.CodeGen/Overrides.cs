@@ -193,8 +193,6 @@ public static class Overrides
         typeof(HelicopterBlade),
         typeof(HelicopterBladeUpsideDown),
         typeof(HelicopterPoleExtension),
-        typeof(WorldWarCannon),
-        typeof(WorldWarCannonCustomShells),
         typeof(AprilFirst),
         typeof(OilDrill),
         typeof(BoomBlock),

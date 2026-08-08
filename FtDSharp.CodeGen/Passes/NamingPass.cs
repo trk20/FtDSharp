@@ -13,7 +13,7 @@ public partial class NamingPass
         Log.Debug("Applying naming transformations for {Count} blocks...", blocks.Count);
         var collisions = new List<string>();
 
-        foreach (var block in blocks)
+        foreach (BlockDefinition block in blocks)
             ProcessBlock(block, collisions);
 
         if (collisions.Count > 0)
@@ -28,7 +28,7 @@ public partial class NamingPass
     {
         var scope = new Utils.NameScope();
 
-        foreach (var prop in block.AllProperties)
+        foreach (PropertyDefinition prop in block.AllProperties)
         {
             var candidate = PrefixPattern.Replace(prop.OriginalName, "");
             candidate = Overrides.ApplyRename(candidate, prop.DataPackageName);

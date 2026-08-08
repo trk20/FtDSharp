@@ -19,7 +19,7 @@ public static class TypeNameHelper
 
         if (type.IsGenericType)
         {
-            var genericDef = type.GetGenericTypeDefinition();
+            Type genericDef = type.GetGenericTypeDefinition();
             if (genericDef == typeof(Nullable<>))
                 return GetFriendlyTypeName(type.GetGenericArguments()[0]) + "?";
 

@@ -7,7 +7,7 @@ namespace FtDSharp.Tests;
 
 public class CompilationTests
 {
-    private const string EntryPointValidationError = "must be a public instance parameterless void method.";
+    private const string _entryPointValidationError = "must be a public instance parameterless void method.";
 
     [Fact]
     public void DefaultTemplate_Compiles()
@@ -28,7 +28,7 @@ public class CompilationTests
             }
             """;
 
-        var (host, hash, diagnostics) = Compile(code);
+        (ScriptHost host, var hash, Diagnostic[] diagnostics) = Compile(code);
 
         Assert.Null(host.LastError);
         Assert.Empty(diagnostics);
@@ -62,7 +62,7 @@ public class CompilationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
         host.Deactivate();
@@ -90,7 +90,7 @@ public class CompilationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -166,7 +166,7 @@ public class CompilationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -189,7 +189,7 @@ public class CompilationTests
 
         var scope = new TestProviderScope();
         scope.GameProvider.GameTime = 42.5f;
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -295,7 +295,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Dynamic object creation via Activator is not allowed", host.LastError);
@@ -315,7 +315,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Type loading by name is not allowed", host.LastError);
@@ -335,7 +335,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Environment variable access is not allowed", host.LastError);
@@ -355,7 +355,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Arbitrary parallelism is not allowed", host.LastError);
@@ -375,7 +375,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Native interop is not allowed", host.LastError);
@@ -396,7 +396,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Dynamic", host.LastError);
@@ -417,7 +417,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("Dynamic compilation is not allowed", host.LastError);
@@ -437,7 +437,7 @@ public class CompilationTests
             }
             """;
 
-        var (success, host) = ScriptTestHelper.TryCompile(code);
+        (var success, ScriptHost host) = ScriptTestHelper.TryCompile(code);
 
         Assert.False(success);
         Assert.Contains("unsafe code", host.LastError, StringComparison.OrdinalIgnoreCase);
@@ -453,14 +453,14 @@ public class CompilationTests
             }
             """;
 
-        var (host, _, diagnostics) = Compile(code, expectSuccess: false);
-        var errorDiagnostics = diagnostics.Where(static d => d.Severity == DiagnosticSeverity.Error).ToArray();
+        (ScriptHost host, var _, Diagnostic[] diagnostics) = Compile(code, expectSuccess: false);
+        Diagnostic[] errorDiagnostics = diagnostics.Where(static d => d.Severity == DiagnosticSeverity.Error).ToArray();
 
         Assert.False(string.IsNullOrEmpty(host.LastError));
         Assert.NotEmpty(errorDiagnostics);
         Assert.All(errorDiagnostics, diagnostic =>
         {
-            var mappedLineSpan = diagnostic.Location.GetMappedLineSpan();
+            FileLinePositionSpan mappedLineSpan = diagnostic.Location.GetMappedLineSpan();
             Assert.Equal(3, mappedLineSpan.StartLinePosition.Line + 1);
         });
     }
@@ -495,7 +495,7 @@ public class CompilationTests
             }
             """;
 
-        AssertInstantiationFailsWithMessage(code, EntryPointValidationError);
+        AssertInstantiationFailsWithMessage(code, _entryPointValidationError);
     }
 
     [Fact]
@@ -512,7 +512,7 @@ public class CompilationTests
             }
             """;
 
-        AssertInstantiationFailsWithMessage(code, EntryPointValidationError);
+        AssertInstantiationFailsWithMessage(code, _entryPointValidationError);
     }
 
     [Fact]
@@ -528,12 +528,12 @@ public class CompilationTests
             }
             """;
 
-        AssertInstantiationFailsWithMessage(code, EntryPointValidationError);
+        AssertInstantiationFailsWithMessage(code, _entryPointValidationError);
     }
 
     private static void AssertCompiles(string code)
     {
-        var (host, _, diagnostics) = Compile(code);
+        (ScriptHost host, var _, Diagnostic[] diagnostics) = Compile(code);
 
         Assert.Null(host.LastError);
         Assert.Empty(diagnostics);
@@ -541,7 +541,7 @@ public class CompilationTests
 
     private static void AssertCompileFailsWithMessage(string code, string expectedMessage)
     {
-        var (host, _, diagnostics) = Compile(code, expectSuccess: false);
+        (ScriptHost host, var _, Diagnostic[] diagnostics) = Compile(code, expectSuccess: false);
 
         Assert.NotEmpty(diagnostics);
         Assert.False(string.IsNullOrWhiteSpace(host.LastError));
@@ -550,7 +550,7 @@ public class CompilationTests
 
     private static void AssertInstantiationFailsWithMessage(string code, string expectedMessage)
     {
-        var host = ScriptTestHelper.Compile(code);
+        ScriptHost host = ScriptTestHelper.Compile(code);
         var hash = ScriptHost.ComputeHash(code);
         var instantiated = host.Instantiate(hash, new TestProviderScope());
 
@@ -563,7 +563,7 @@ public class CompilationTests
     {
         var host = new ScriptHost();
         var hash = ScriptHost.ComputeHash(code);
-        var (success, diagnostics) = host.Compile(code, hash);
+        (var success, Diagnostic[] diagnostics) = host.Compile(code, hash);
 
         Assert.Equal(expectSuccess, success);
 

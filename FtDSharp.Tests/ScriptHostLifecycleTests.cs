@@ -45,7 +45,7 @@ public class ScriptHostLifecycleTests
             }
             """;
 
-        var host = ScriptTestHelper.Compile(code);
+        ScriptHost host = ScriptTestHelper.Compile(code);
         var hash = ScriptHost.ComputeHash(code);
 
         var instantiated = host.Instantiate(hash, new TestProviderScope());
@@ -77,7 +77,7 @@ public class ScriptHostLifecycleTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.Compile(code);
+        ScriptHost host = ScriptTestHelper.Compile(code);
         var hash = ScriptHost.ComputeHash(code);
 
         var instantiated = host.Instantiate(hash, scope);
@@ -104,10 +104,10 @@ public class ScriptHostLifecycleTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
-        var firstException = Record.Exception(host.Deactivate);
-        var secondException = Record.Exception(host.Deactivate);
+        Exception firstException = Record.Exception(host.Deactivate);
+        Exception secondException = Record.Exception(host.Deactivate);
 
         Assert.Null(firstException);
         Assert.Null(secondException);
@@ -129,7 +129,7 @@ public class ScriptHostLifecycleTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
         host.Deactivate();
@@ -158,14 +158,14 @@ public class ScriptHostLifecycleTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
         var hash = ScriptHost.ComputeHash(code);
 
         host.Deactivate();
 
-        Assert.True(ScriptCompilationCache.TryGet(hash, out var assembly));
-        var scriptType = Assert.Single(assembly!.GetTypes(), type => type.Name == "TestScript");
-        var disposedProperty = scriptType.GetProperty("Disposed");
+        Assert.True(ScriptCompilationCache.TryGet(hash, out System.Reflection.Assembly? assembly));
+        Type scriptType = Assert.Single(assembly!.GetTypes(), type => type.Name == "TestScript");
+        System.Reflection.PropertyInfo? disposedProperty = scriptType.GetProperty("Disposed");
 
         Assert.NotNull(disposedProperty);
         Assert.Equal(true, disposedProperty!.GetValue(null));
@@ -187,7 +187,7 @@ public class ScriptHostLifecycleTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
         host.Deactivate();
@@ -211,7 +211,7 @@ public class ScriptHostLifecycleTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -232,7 +232,7 @@ public class ScriptHostLifecycleTests
             }
             """;
 
-        var host = ScriptTestHelper.Compile(code);
+        ScriptHost host = ScriptTestHelper.Compile(code);
         var hash = ScriptHost.ComputeHash(code);
 
         var instantiated = host.Instantiate(hash, new TestProviderScope());

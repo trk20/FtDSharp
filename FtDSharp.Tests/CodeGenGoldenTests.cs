@@ -163,7 +163,7 @@ public class CodeGenGoldenTests : IClassFixture<CodeGenGoldenTestContext>
             ]
         };
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
             MissilePartConfig.ValidateDefinitions([definition], MissilePartConfig.Enums));
 
         Assert.Contains("NonexistentEnum", ex.Message, StringComparison.Ordinal);
@@ -172,7 +172,7 @@ public class CodeGenGoldenTests : IClassFixture<CodeGenGoldenTestContext>
     [Fact]
     public void MissilePartConfig_Validate_RejectsUnreferencedEnum()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
             MissilePartConfig.ValidateDefinitions([], [new GeneratedEnum("UnusedEnum", [])]));
 
         Assert.Contains("UnusedEnum", ex.Message, StringComparison.Ordinal);
@@ -181,7 +181,7 @@ public class CodeGenGoldenTests : IClassFixture<CodeGenGoldenTestContext>
     [Fact]
     public void LaserBlock_RenderSurface_ClassifiesAsWeapon()
     {
-        var laser = BlockPipeline.Run().Single(b => b.ClassName == "Laser");
+        BlockDefinition laser = BlockPipeline.Run().Single(b => b.ClassName == "Laser");
 
         Assert.Equal(BlockKind.Weapon, laser.Surface.Kind);
         Assert.True(laser.Surface.IsWeapon);

@@ -92,7 +92,7 @@ namespace FtDSharp.Facades
 
         public virtual AimResult AimAt(Vector3 worldPosition)
         {
-            var result = AimAtInternal(worldPosition);
+            AimResult result = AimAtInternal(worldPosition);
             SetAimState(result);
             return result;
         }
@@ -104,7 +104,7 @@ namespace FtDSharp.Facades
         /// </summary>
         internal AimResult AimAtInternal(Vector3 worldPosition)
         {
-            var direction = (worldPosition - _weapon.GameWorldPosition).normalized;
+            Vector3 direction = (worldPosition - _weapon.GameWorldPosition).normalized;
             return AimAtDirectionInternal(direction);
         }
 
@@ -121,7 +121,7 @@ namespace FtDSharp.Facades
             _weapon.CheckDirection(statusReturn);
 
             // Read results from weapon status based on weapon type
-            var type = DetermineWeaponType();
+            WeaponType type = DetermineWeaponType();
             if (type == WeaponType.Unknown)
             {
                 return new AimResult(false, false, false);
@@ -151,11 +151,11 @@ namespace FtDSharp.Facades
         public virtual TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
         {
             // Calculate lead for THIS weapon only, aim only this weapon (no turret control)
-            var weaponPos = _weapon.GameWorldPosition;
+            Vector3 weaponPos = _weapon.GameWorldPosition;
             var projectileSpeed = options.ProjectileSpeed ?? ProjectileSpeed;
             if (projectileSpeed <= 0) projectileSpeed = 500f;
 
-            var constructVelocity = ParentConstruct?.Velocity ?? Vector3.zero;
+            Vector3 constructVelocity = ParentConstruct?.Velocity ?? Vector3.zero;
 
             // Configure aiming module
             _aimingModule.TargetPosition = targetPosition;
@@ -189,7 +189,7 @@ namespace FtDSharp.Facades
                 aimDirection = (targetPosition - weaponPos).normalized;
             }
 
-            var aimResult = AimAtDirectionInternal(aimDirection);
+            AimResult aimResult = AimAtDirectionInternal(aimDirection);
             var trackResult = new TrackResult(aimResult, flightTime, aimPoint, isTerrainBlocking, IsReady);
             SetTrackState(trackResult);
             return trackResult;
@@ -223,7 +223,7 @@ namespace FtDSharp.Facades
 
         public virtual bool TryFireAt(Vector3 worldPosition)
         {
-            var result = AimAt(worldPosition);
+            AimResult result = AimAt(worldPosition);
             if (result.IsOnTarget && IsReady)
             {
                 return Fire();
@@ -335,11 +335,11 @@ namespace FtDSharp.Facades
                 if (aps.Node.ShellRacks.ShellCount == 0) return false;
 
                 // Check shell is loaded
-                var nextShell = aps.Node.ShellRacks.GetNextShell(false);
+                ShellModel nextShell = aps.Node.ShellRacks.GetNextShell(false);
                 if (nextShell == null) return false;
 
                 // Check barrel is ready
-                var nextBarrel = aps.BarrelSystem.GetNextBarrelReady();
+                CannonBarrelSystem nextBarrel = aps.BarrelSystem.GetNextBarrelReady();
                 if (nextBarrel == null) return false;
 
                 // Check weapon sync
@@ -348,7 +348,7 @@ namespace FtDSharp.Facades
                 // Check railgun energy (if applicable)
                 if (aps.Node.RailgunCapacity > 0f && ApsRailEnergy != null)
                 {
-                    var energy = _allConstruct.Main.GetForce().Energy;
+                    IResourcePacket energy = _allConstruct.Main.GetForce().Energy;
                     var railEnergy = ApsRailEnergy(aps);
                     var energyNeeded = Math.Min(aps.Data.EnergyToUse, nextShell.Propellant.MaxRailDraw);
 
@@ -377,7 +377,7 @@ namespace FtDSharp.Facades
                 if (cram.Node.Stats.TotalPerSec == 0) return false;
 
                 // Check packing
-                if (cram.PackTime < cram.Node.Stats.MaxPackTime * cram.CramData.MinimumPackPercentage / 100f - 0.001f)
+                if (cram.PackTime < (cram.Node.Stats.MaxPackTime * cram.CramData.MinimumPackPercentage / 100f) - 0.001f)
                     return false;
 
                 // Check weapon sync
@@ -439,7 +439,7 @@ namespace FtDSharp.Facades
                 float energyMultiplier = (int)plasma.EmitterType == 1 ? 0.5f : 1f; // Destabilizer type
                 float energyNeeded = energyMultiplier * projectileCount * chargeTarget * acceleratorEnergy;
 
-                var energy = _allConstruct.Main.GetForce().Energy;
+                IResourcePacket energy = _allConstruct.Main.GetForce().Energy;
                 if (energy.Quantity < energyNeeded) return false;
 
                 return true;
@@ -476,7 +476,7 @@ namespace FtDSharp.Facades
                 float energyMultiplier = (int)plasma.EmitterType == 1 ? 0.5f : 1f;
                 float energyNeeded = energyMultiplier * projectileCount * chargeTarget * acceleratorEnergy;
 
-                var energy = _allConstruct.Main.GetForce().Energy;
+                IResourcePacket energy = _allConstruct.Main.GetForce().Energy;
                 if (energy.Quantity < energyNeeded) return false;
 
                 return true;
@@ -519,13 +519,13 @@ namespace FtDSharp.Facades
             {
                 if (!mc.WeaponSyncData.SyncFireReady(mc, mc.CheckTimes.LastFireTime)) return false;
 
-                var node = mc.Node;
+                BrilliantSkies.Blocks.MissileComponents.MissileNode node = mc.Node;
                 if (node == null) return false;
 
-                foreach (var pad in node.firingOrder)
+                foreach (LaunchpadAbstract pad in node.firingOrder)
                 {
                     if (pad == null) continue;
-                    foreach (var tube in pad.MissileTubes)
+                    foreach (MissileTube tube in pad.MissileTubes)
                     {
                         if (tube != null && tube.Loaded) return true;
                     }

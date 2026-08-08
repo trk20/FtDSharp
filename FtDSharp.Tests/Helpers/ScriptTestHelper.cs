@@ -7,7 +7,7 @@ public static class ScriptTestHelper
     {
         var host = new ScriptHost();
         var hash = ScriptHost.ComputeHash(code);
-        var (success, _) = host.Compile(code, hash);
+        (var success, Microsoft.CodeAnalysis.Diagnostic[] _) = host.Compile(code, hash);
         return (success, host);
     }
 
@@ -16,20 +16,18 @@ public static class ScriptTestHelper
     {
         var host = new ScriptHost();
         var hash = ScriptHost.ComputeHash(code);
-        var (success, diagnostics) = host.Compile(code, hash);
-        if (!success)
-            throw new InvalidOperationException(
-                $"Compilation failed:\n{string.Join("\n", diagnostics.Select(d => d.ToString()))}");
-        return host;
+        (var success, Microsoft.CodeAnalysis.Diagnostic[] diagnostics) = host.Compile(code, hash);
+        return !success
+            ? throw new InvalidOperationException(
+                $"Compilation failed:\n{string.Join("\n", diagnostics.Select(d => d.ToString()))}")
+            : host;
     }
 
     /// <summary>Compiles, instantiates, and returns the host ready to tick.</summary>
     public static ScriptHost CompileAndInstantiate(string code, IProviderScope scope)
     {
-        var host = Compile(code);
+        ScriptHost host = Compile(code);
         var hash = ScriptHost.ComputeHash(code);
-        if (!host.Instantiate(hash, scope))
-            throw new InvalidOperationException($"Instantiation failed: {host.LastError}");
-        return host;
+        return !host.Instantiate(hash, scope) ? throw new InvalidOperationException($"Instantiation failed: {host.LastError}") : host;
     }
 }

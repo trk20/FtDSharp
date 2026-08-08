@@ -79,8 +79,8 @@ namespace FtDSharp.Facades
 
         public void AimAt(Vector3 aimPoint)
         {
-            var receiver = _missile.Blueprint.LuaReceiver;
-            var error = receiver.ErrorSeed;
+            MissileLuaReceiver receiver = _missile.Blueprint.LuaReceiver;
+            Vector3 error = receiver.ErrorSeed;
             // todo: figure out how to apply error without being easily avoided
             // stability/detection error already applied to target position, need something for ECM/GPP error?
 
@@ -152,7 +152,7 @@ namespace FtDSharp.Facades
 
         internal AdvancedJetEffects? GetAdvancedJetEffects()
         {
-            var propulsion = GetActivePropulsion();
+            MissilePropulsion? propulsion = GetActivePropulsion();
             if (propulsion == null || _effectSystemField == null)
                 return null;
             return _effectSystemField.GetValue(propulsion) as AdvancedJetEffects;
@@ -183,7 +183,7 @@ namespace FtDSharp.Facades
                     }
                     else
                     {
-                        var propulsion = _parent.GetActivePropulsion();
+                        MissilePropulsion? propulsion = _parent.GetActivePropulsion();
                         if (propulsion != null)
                         {
                             propulsion.parameters.SmokeColor.Locked = false;

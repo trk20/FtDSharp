@@ -156,14 +156,14 @@ public static class LogicalInterfaces
 
     static LogicalInterfaces()
     {
-        foreach (var definition in Definitions)
+        foreach (LogicalInterfaceDefinition definition in Definitions)
             definition.FinalizePropertyNames();
     }
 
     public static HashSet<string> GetAllLogicalPropertyNames()
     {
         var result = new HashSet<string>();
-        foreach (var def in Definitions)
+        foreach (LogicalInterfaceDefinition def in Definitions)
         {
             foreach (var prop in def.PropertyNames)
                 result.Add(prop);
@@ -177,7 +177,7 @@ public static class LogicalInterfaces
 
         foreach (var logicalName in block.ImplementedLogicalInterfaces)
         {
-            var def = Definitions.FirstOrDefault(d => d.InterfaceName == logicalName);
+            LogicalInterfaceDefinition? def = Definitions.FirstOrDefault(d => d.InterfaceName == logicalName);
             if (def == null)
                 continue;
 
@@ -196,7 +196,7 @@ public static class LogicalInterfaces
         while (toProcess.Count > 0)
         {
             var current = toProcess.Dequeue();
-            var def = Definitions.FirstOrDefault(d => d.InterfaceName == current);
+            LogicalInterfaceDefinition? def = Definitions.FirstOrDefault(d => d.InterfaceName == current);
             if (def == null) continue;
 
             foreach (var parent in def.InheritsFrom)

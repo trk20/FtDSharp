@@ -25,11 +25,11 @@ public class BlockDefinition
     public HashSet<string> GetInheritedPropertyNames()
     {
         var inherited = new HashSet<string>();
-        var current = Parent;
+        BlockDefinition? current = Parent;
 
         while (current != null)
         {
-            foreach (var prop in current.AllProperties)
+            foreach (PropertyDefinition prop in current.AllProperties)
                 inherited.Add(prop.Name);
             current = current.Parent;
         }

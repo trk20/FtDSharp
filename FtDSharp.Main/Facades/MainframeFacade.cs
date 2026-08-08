@@ -24,11 +24,11 @@ namespace FtDSharp.Facades
         {
             get
             {
-                var targetManager = _mainframe.Node?.targetManager;
+                IAiTargetManager? targetManager = _mainframe.Node?.targetManager;
                 if (targetManager == null || !targetManager.TargetExists)
                     return null;
 
-                var primaryTarget = targetManager.GetPrimaryTarget();
+                TargetObject? primaryTarget = targetManager.GetPrimaryTarget();
                 if (primaryTarget == null || primaryTarget.IsNull())
                     return null;
                 return new TargetFacade(primaryTarget);
@@ -39,16 +39,16 @@ namespace FtDSharp.Facades
         {
             get
             {
-                var targetManager = _mainframe.Node?.targetManager;
+                IAiTargetManager? targetManager = _mainframe.Node?.targetManager;
                 if (targetManager == null)
                     return System.Array.Empty<ITarget>();
 
-                var prioritized = targetManager.GetPrioritisedTargetList();
+                List<TargetObject> prioritized = targetManager.GetPrioritisedTargetList();
                 if (prioritized == null)
                     return System.Array.Empty<ITarget>();
 
                 var result = new List<ITarget>(prioritized.Count);
-                foreach (var targetObj in prioritized)
+                foreach (TargetObject targetObj in prioritized)
                 {
                     if (targetObj != null && !targetObj.IsNull())
                     {
@@ -61,16 +61,16 @@ namespace FtDSharp.Facades
 
         public Vector3 GetAimpoint(ITarget target)
         {
-            var targetManager = _mainframe.Node?.targetManager;
+            IAiTargetManager? targetManager = _mainframe.Node?.targetManager;
             if (targetManager == null)
                 return target.Position; // fallback to target center
 
-            var prioritized = targetManager.GetPrioritisedTargetList();
+            List<TargetObject> prioritized = targetManager.GetPrioritisedTargetList();
             if (prioritized == null)
                 return target.Position;
 
             // Find the TargetObject matching the given target's UniqueId
-            var targetObj = prioritized.FirstOrDefault(t => t?.C?.UniqueId == target.UniqueId);
+            TargetObject targetObj = prioritized.FirstOrDefault(t => t?.C?.UniqueId == target.UniqueId);
             if (targetObj == null)
                 return target.Position;
 
@@ -80,11 +80,11 @@ namespace FtDSharp.Facades
 
         public void SetPrimaryTarget(ITarget? target)
         {
-            var targetManager = _mainframe.Node?.targetManager;
+            IAiTargetManager? targetManager = _mainframe.Node?.targetManager;
             if (targetManager == null || target == null)
                 return;
 
-            foreach (var targetObj in targetManager.GetPrioritisedTargetList().Where(t => t != null) ?? new List<TargetObject>())
+            foreach (TargetObject? targetObj in targetManager.GetPrioritisedTargetList().Where(t => t != null) ?? new List<TargetObject>())
             {
                 if (target.UniqueId == targetObj?.C?.UniqueId)
                 {

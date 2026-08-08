@@ -12,14 +12,14 @@ public class TargetInfoPrinter
         ClearLogs();
 
         // Get the highest priority AI mainframe
-        var mainframe = AI.HighestPriorityMainframe;
-        var target = mainframe.PrimaryTarget;
+        IMainframe mainframe = AI.HighestPriorityMainframe;
+        ITarget? target = mainframe.PrimaryTarget;
         if (target == null)
         {
             Log("No primary target.");
             return;
         }        // Get the aimpoint for this target from this mainframe
-        var aimpoint = mainframe.GetAimpoint(target);
+        Vector3 aimpoint = mainframe.GetAimpoint(target);
 
         Log(
             "Primary Target Info:\n" +

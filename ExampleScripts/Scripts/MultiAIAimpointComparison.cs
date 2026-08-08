@@ -16,11 +16,11 @@ public class MultiAIAimpointComparison
     {
         ClearLogs();
 
-        var mainframes = AI.Mainframes;
+        IReadOnlyList<IMainframe> mainframes = AI.Mainframes;
         Log($"Found {mainframes.Count} AI mainframe(s)");
 
         // Use the highest priority mainframe's primary target as our reference
-        var target = AI.HighestPriorityMainframe.PrimaryTarget;
+        ITarget? target = AI.HighestPriorityMainframe.PrimaryTarget;
         if (target == null)
         {
             Log("No target detected.");
@@ -33,18 +33,18 @@ public class MultiAIAimpointComparison
         Log("---");
 
         // Compare aimpoints from each mainframe for the same target
-        foreach (var mainframe in mainframes)
+        foreach (IMainframe mainframe in mainframes)
         {
-            var block = mainframe.Block;
-            var aimpoint = mainframe.GetAimpoint(target);
-            float distanceFromCenter = Vector3.Distance(aimpoint, target.Position);
+            IAIMainframe block = mainframe.Block;
+            Vector3 aimpoint = mainframe.GetAimpoint(target);
+            var distanceFromCenter = Vector3.Distance(aimpoint, target.Position);
 
             Log($"\nMainframe Priority {block.Priority}:");
             Log($"  Aimpoint: {aimpoint}");
             Log($"  Distance from target center: {distanceFromCenter:F2}m");
 
             // Show which target this mainframe is actually focused on
-            var thisMainframeTarget = mainframe.PrimaryTarget;
+            ITarget? thisMainframeTarget = mainframe.PrimaryTarget;
             if (thisMainframeTarget != null && thisMainframeTarget.UniqueId != target.UniqueId)
             {
                 Log($"  Note: This mainframe's primary target is {thisMainframeTarget.Name} (different from reference)");
@@ -56,10 +56,10 @@ public class MultiAIAimpointComparison
         // If there are multiple mainframes, show aimpoint spread
         if (mainframes.Count > 1)
         {
-            var aimpoints = mainframes.Select(m => m.GetAimpoint(target)).ToArray();
+            Vector3[] aimpoints = mainframes.Select(m => m.GetAimpoint(target)).ToArray();
 
             // Calculate max spread between any two aimpoints
-            float maxSpread = aimpoints
+            var maxSpread = aimpoints
                 .SelectMany((a, i) => aimpoints.Skip(i + 1).Select(b => Vector3.Distance(a, b)))
                 .DefaultIfEmpty(0f)
                 .Max();

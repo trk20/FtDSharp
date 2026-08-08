@@ -39,7 +39,7 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var (host, hash, diagnostics) = Compile(code);
+        (ScriptHost host, var hash, Diagnostic[] diagnostics) = Compile(code);
 
         Assert.True(host.Compile(code, hash).Success);
         Assert.Empty(diagnostics);
@@ -80,7 +80,7 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         Assert.Equal(new[] { "start" }, scope.LogProvider.InfoMessages);
 
@@ -110,7 +110,7 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Deactivate();
 
@@ -134,7 +134,7 @@ public class IntegrationTests
 
         var scope = new TestProviderScope();
         scope.GameProvider.GameTime = 123.25f;
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -156,13 +156,13 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        scope.AIProvider.Mainframes = new IMainframe[]
-        {
+        scope.AIProvider.Mainframes =
+        [
             new TestMainframe(),
             new TestMainframe(),
             new TestMainframe()
-        };
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ];
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -187,11 +187,11 @@ public class IntegrationTests
 
         var scope = new TestProviderScope();
         scope.GameProvider.MainConstruct = new TestMainConstruct(scope.PropulsionProvider.Propulsion);
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
-        var propulsion = Assert.IsType<MockPropulsion>(scope.PropulsionProvider.Propulsion);
+        MockPropulsion propulsion = Assert.IsType<MockPropulsion>(scope.PropulsionProvider.Propulsion);
         Assert.Equal(0.75f, propulsion.Forwards);
         Assert.Equal(-0.25f, propulsion.Yaw);
         Assert.Equal(1f, propulsion.MainDrive);
@@ -224,8 +224,8 @@ public class IntegrationTests
 
         var scopeA = new TestProviderScope();
         var scopeB = new TestProviderScope();
-        var hostA = ScriptTestHelper.CompileAndInstantiate(codeA, scopeA);
-        var hostB = ScriptTestHelper.CompileAndInstantiate(codeB, scopeB);
+        ScriptHost hostA = ScriptTestHelper.CompileAndInstantiate(codeA, scopeA);
+        ScriptHost hostB = ScriptTestHelper.CompileAndInstantiate(codeB, scopeB);
 
         hostA.Tick(scopeA);
         hostB.Tick(scopeB);
@@ -263,9 +263,9 @@ public class IntegrationTests
 
         var scopeA = new TestProviderScope();
         var scopeB = new TestProviderScope();
-        var drawHostA = ScriptTestHelper.CompileAndInstantiate(drawScript, scopeA);
-        var drawHostB = ScriptTestHelper.CompileAndInstantiate(drawScript, scopeB);
-        var clearHostA = ScriptTestHelper.CompileAndInstantiate(clearScript, scopeA);
+        ScriptHost drawHostA = ScriptTestHelper.CompileAndInstantiate(drawScript, scopeA);
+        ScriptHost drawHostB = ScriptTestHelper.CompileAndInstantiate(drawScript, scopeB);
+        ScriptHost clearHostA = ScriptTestHelper.CompileAndInstantiate(clearScript, scopeA);
 
         drawHostA.Tick(scopeA);
         drawHostB.Tick(scopeB);
@@ -296,7 +296,7 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -326,7 +326,7 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -356,7 +356,7 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
         host.Tick(scope);
 
@@ -385,9 +385,9 @@ public class IntegrationTests
             """;
 
         var scope = new TestProviderScope();
-        var host = ScriptTestHelper.CompileAndInstantiate(code, scope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, scope);
 
-        var exception = Record.Exception(host.Deactivate);
+        Exception exception = Record.Exception(host.Deactivate);
 
         Assert.Null(exception);
         Assert.False(host.Active);
@@ -423,7 +423,7 @@ public class IntegrationTests
         var hashV1 = ScriptHost.ComputeHash(codeV1);
         var hashV2 = ScriptHost.ComputeHash(codeV2);
 
-        var compileV1 = host.Compile(codeV1, hashV1);
+        (bool Success, Diagnostic[] Diagnostics) compileV1 = host.Compile(codeV1, hashV1);
 
         Assert.True(compileV1.Success);
         Assert.Empty(compileV1.Diagnostics);
@@ -432,7 +432,7 @@ public class IntegrationTests
         host.Tick(scope);
         host.Deactivate();
 
-        var compileV2 = host.Compile(codeV2, hashV2);
+        (bool Success, Diagnostic[] Diagnostics) compileV2 = host.Compile(codeV2, hashV2);
 
         Assert.True(compileV2.Success);
         Assert.Empty(compileV2.Diagnostics);
@@ -447,7 +447,7 @@ public class IntegrationTests
     {
         var host = new ScriptHost();
         var hash = ScriptHost.ComputeHash(code);
-        var (success, diagnostics) = host.Compile(code, hash);
+        (var success, Diagnostic[] diagnostics) = host.Compile(code, hash);
 
         Assert.True(success, host.LastError);
 

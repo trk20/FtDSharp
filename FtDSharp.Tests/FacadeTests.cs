@@ -47,7 +47,7 @@ public class FacadeTests
         ScriptContextTestHelpers.InIsolatedContext(() =>
         {
             var scope = new TestProviderScope();
-            var expected = ScriptContextTestHelpers.CreateReference<MainConstructFacade, IMainConstruct>();
+            IMainConstruct expected = ScriptContextTestHelpers.CreateReference<MainConstructFacade, IMainConstruct>();
             scope.GameProvider.MainConstruct = expected;
 
             using (ScriptContext.Push(scope))
@@ -175,7 +175,7 @@ public class FacadeTests
     {
         ScriptContextTestHelpers.InIsolatedContext(() =>
         {
-            var exception = Record.Exception(() =>
+            Exception exception = Record.Exception(() =>
             {
                 Logging.Log("info");
                 Logging.LogWarning("warn");
@@ -358,7 +358,7 @@ public class FacadeTests
     {
         ScriptContextTestHelpers.InIsolatedContext(() =>
         {
-            var exception = Record.Exception(() =>
+            Exception exception = Record.Exception(() =>
             {
                 Drawing.Arrow(Vector3.zero, Vector3.one, Color.green);
                 Drawing.Clear();
@@ -431,7 +431,7 @@ public class FacadeTests
     {
         ScriptContextTestHelpers.InIsolatedContext(() =>
         {
-            var missiles = Guidance.Missiles;
+            IReadOnlyList<IMissile> missiles = Guidance.Missiles;
 
             Assert.NotNull(missiles);
             Assert.Empty(missiles);
@@ -490,7 +490,7 @@ public class FacadeTests
         ScriptContextTestHelpers.InIsolatedContext(() =>
         {
             var scope = new TestProviderScope();
-            var expected = ScriptContextTestHelpers.CreateReference<FleetFacade, IFleet>();
+            IFleet expected = ScriptContextTestHelpers.CreateReference<FleetFacade, IFleet>();
             scope.FleetProvider.MyFleet = expected;
 
             using (ScriptContext.Push(scope))
@@ -520,12 +520,12 @@ public class FacadeTests
         {
             var scope = new TestProviderScope();
             scope.GameProvider.TicksSinceStart = 1000;
-            scope.WarningsProvider.IncomingProjectiles = new IProjectileWarning[]
-            {
+            scope.WarningsProvider.IncomingProjectiles =
+            [
                 new TestProjectileWarning { Type = ProjectileType.Missile },
                 new TestProjectileWarning { Type = ProjectileType.Shell },
                 new TestProjectileWarning { Type = ProjectileType.Missile },
-            };
+            ];
 
             using (ScriptContext.Push(scope))
             {
@@ -542,12 +542,12 @@ public class FacadeTests
         {
             var scope = new TestProviderScope();
             scope.GameProvider.TicksSinceStart = 2000;
-            scope.WarningsProvider.IncomingProjectiles = new IProjectileWarning[]
-            {
+            scope.WarningsProvider.IncomingProjectiles =
+            [
                 new TestProjectileWarning { Type = ProjectileType.Missile },
                 new TestProjectileWarning { Type = ProjectileType.Shell },
                 new TestProjectileWarning { Type = ProjectileType.Cram },
-            };
+            ];
 
             using (ScriptContext.Push(scope))
             {
@@ -567,7 +567,7 @@ public class FacadeTests
 
             using (ScriptContext.Push(scope))
             {
-                var controller = Weapons.CreateController(Array.Empty<IWeapon>());
+                IWeaponController controller = Weapons.CreateController(Array.Empty<IWeapon>());
 
                 Assert.NotNull(controller);
                 Assert.Single(scope.WeaponsProvider.CreateControllerCalls);
@@ -580,7 +580,7 @@ internal static class ScriptContextTestHelpers
 {
     public static void InIsolatedContext(Action assertion)
     {
-        var previous = ScriptContext.Current;
+        IProviderScope? previous = ScriptContext.Current;
         ScriptContext.Current = null;
 
         try

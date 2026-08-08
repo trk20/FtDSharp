@@ -10,10 +10,10 @@ public class WeaponTypePropertiesDemo
     {
         ClearLogs();
 
-        var target = AI.HighestPriorityMainframe.PrimaryTarget;
+        ITarget? target = AI.HighestPriorityMainframe.PrimaryTarget;
 
         // Blocks.ApsFiringPieces returns IApsFiringPiece which extends IWeapon
-        foreach (var aps in Blocks.ApsFiringPieces)
+        foreach (IApsFiringPiece aps in Blocks.ApsFiringPieces)
         {
             Log($"--- APS: {aps.CustomName ?? $"ID:{aps.UniqueId}"} ---");
 
@@ -30,8 +30,8 @@ public class WeaponTypePropertiesDemo
                 aps.Track(target);
                 Log($"  Track: OnTarget={aps.OnTarget}, CanFire={aps.CanFire}");
 
-                var color = aps.CanFire ? Color.green : (aps.CanAim ? Color.yellow : Color.red);
-                Drawing.Arrow(aps.WorldPosition, aps.WorldPosition + aps.AimDirection * 30f, color, 0.5f);
+                Color color = aps.CanFire ? Color.green : (aps.CanAim ? Color.yellow : Color.red);
+                Drawing.Arrow(aps.WorldPosition, aps.WorldPosition + (aps.AimDirection * 30f), color, 0.5f);
 
                 if (aps.CanFire)
                 {
@@ -41,7 +41,7 @@ public class WeaponTypePropertiesDemo
         }
 
         // Same pattern for CRAM
-        foreach (var cram in Blocks.CramFiringPieces)
+        foreach (ICramFiringPiece cram in Blocks.CramFiringPieces)
         {
             Log($"\n--- CRAM: {cram.CustomName ?? $"ID:{cram.UniqueId}"} ---");
 
@@ -56,13 +56,13 @@ public class WeaponTypePropertiesDemo
                 cram.Track(target);
                 Log($"  Track: OnTarget={cram.OnTarget}, FlightTime={cram.FlightTime:F2}s");
 
-                var color = cram.CanFire ? Color.green : Color.yellow;
-                Drawing.Arrow(cram.WorldPosition, cram.WorldPosition + cram.AimDirection * 25f, color, 0.5f);
+                Color color = cram.CanFire ? Color.green : Color.yellow;
+                Drawing.Arrow(cram.WorldPosition, cram.WorldPosition + (cram.AimDirection * 25f), color, 0.5f);
             }
         }
 
         // Lasers
-        foreach (var laser in Blocks.Lasers)
+        foreach (ILaser laser in Blocks.Lasers)
         {
             Log($"\n--- Laser: {laser.CustomName ?? $"ID:{laser.UniqueId}"} ---");
 
@@ -75,8 +75,8 @@ public class WeaponTypePropertiesDemo
                 laser.Track(target, TrackOptions.InstantHit);
                 Log($"  Track: OnTarget={laser.OnTarget}");
 
-                var beamColor = laser.Firing ? Color.red : Color.gray;
-                Drawing.Arrow(laser.WorldPosition, laser.WorldPosition + laser.AimDirection * 50f, beamColor, 0.3f);
+                Color beamColor = laser.Firing ? Color.red : Color.gray;
+                Drawing.Arrow(laser.WorldPosition, laser.WorldPosition + (laser.AimDirection * 50f), beamColor, 0.3f);
             }
         }
     }

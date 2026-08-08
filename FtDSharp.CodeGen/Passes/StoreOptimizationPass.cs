@@ -13,7 +13,7 @@ public static class StoreOptimizationPass
         Log.Debug("Assigning block stores for {Count} blocks...", blocks.Count);
         int exactCount = 0, interfaceCount = 0, parentCount = 0, fallbackCount = 0;
 
-        foreach (var block in blocks)
+        foreach (BlockDefinition block in blocks)
         {
             if (concreteStores.TryGetValue(block.GameType, out var storeName))
             {
@@ -23,7 +23,7 @@ public static class StoreOptimizationPass
             }
 
             bool found = false;
-            foreach (var iface in block.GameType.GetInterfaces())
+            foreach (Type iface in block.GameType.GetInterfaces())
             {
                 if (interfaceStores.TryGetValue(iface, out storeName))
                 {
@@ -35,7 +35,7 @@ public static class StoreOptimizationPass
             }
             if (found) continue;
 
-            var parentType = block.GameType.BaseType;
+            Type? parentType = block.GameType.BaseType;
             while (parentType != null && parentType != typeof(object))
             {
                 if (concreteStores.TryGetValue(parentType, out storeName))

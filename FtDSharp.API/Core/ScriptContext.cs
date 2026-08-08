@@ -15,7 +15,7 @@ namespace FtDSharp
 
         public static IDisposable Push(IProviderScope scope)
         {
-            var previous = Scope.Value;
+            IProviderScope? previous = Scope.Value;
             Scope.Value = scope;
             return new ScopeGuard(previous);
         }

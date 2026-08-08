@@ -420,7 +420,7 @@ The [`ExampleScripts/`](ExampleScripts/) folder contains working examples demons
    cp ftd-managed/UnityEngine.CoreModule.dll References/
    ```
 
-   (`release.sh` does this automatically for `ScriptProject/`)
+   (`dotnet run --project FtDSharp.Release` does this automatically for `ScriptProject/`)
 
 3. Run the code generator to produce API bindings:
 
@@ -434,7 +434,7 @@ The [`ExampleScripts/`](ExampleScripts/) folder contains working examples demons
    dotnet build
    ```
 
-   The post-build step copies the required DLLs to the project root, ready for the game's mod loader.
+   PostBuild deploys the mod into `~/From The Depths/Mods/FtDSharp/` (override with `/p:ModDeployDir=...`).
 
 ## License
 

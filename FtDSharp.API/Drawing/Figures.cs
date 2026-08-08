@@ -42,11 +42,11 @@ namespace FtDSharp
         {
             VectorLines.i.Current.Line(start, end, Color, Width);
 
-            var direction = (end - start).normalized;
+            Vector3 direction = (end - start).normalized;
             var arrowSize = (end - start).magnitude / 20f;
 
-            VectorLines.i.Current.Line(end - Quaternion.Euler(0f, 45f, 0f) * direction * arrowSize, end, Color, Width);
-            VectorLines.i.Current.Line(end - Quaternion.Euler(0f, -45f, 0f) * direction * arrowSize, end, Color, Width);
+            VectorLines.i.Current.Line(end - (Quaternion.Euler(0f, 45f, 0f) * direction * arrowSize), end, Color, Width);
+            VectorLines.i.Current.Line(end - (Quaternion.Euler(0f, -45f, 0f) * direction * arrowSize), end, Color, Width);
         }
     }
 
@@ -88,20 +88,20 @@ namespace FtDSharp
 
         public override void DrawFigure()
         {
-            var camera = Camera.current ?? Camera.main;
+            Camera camera = Camera.current ?? Camera.main;
             if (camera == null) return;
 
             var distance = Vector3.Distance(camera.transform.position, Position);
             var scaledSize = _size * (distance / 100f);
             var halfSize = scaledSize * 0.05f;
 
-            var camRight = camera.transform.right;
-            var camUp = camera.transform.up;
-            var diagonal1 = (camRight + camUp).normalized;
-            var diagonal2 = (camRight - camUp).normalized;
+            Vector3 camRight = camera.transform.right;
+            Vector3 camUp = camera.transform.up;
+            Vector3 diagonal1 = (camRight + camUp).normalized;
+            Vector3 diagonal2 = (camRight - camUp).normalized;
 
-            VectorLines.i.Current.Line(Position - diagonal1 * halfSize, Position + diagonal1 * halfSize, Color, Width);
-            VectorLines.i.Current.Line(Position - diagonal2 * halfSize, Position + diagonal2 * halfSize, Color, Width);
+            VectorLines.i.Current.Line(Position - (diagonal1 * halfSize), Position + (diagonal1 * halfSize), Color, Width);
+            VectorLines.i.Current.Line(Position - (diagonal2 * halfSize), Position + (diagonal2 * halfSize), Color, Width);
         }
     }
 
@@ -118,9 +118,9 @@ namespace FtDSharp
         public override void DrawFigure()
         {
             var offset = Width * _scale;
-            VectorLines.i.Current.Line(Position - Vector3.forward * offset, Position + Vector3.forward * offset, Color, Width);
-            VectorLines.i.Current.Line(Position - Vector3.up * offset, Position + Vector3.up * offset, Color, Width);
-            VectorLines.i.Current.Line(Position - Vector3.right * offset, Position + Vector3.right * offset, Color, Width);
+            VectorLines.i.Current.Line(Position - (Vector3.forward * offset), Position + (Vector3.forward * offset), Color, Width);
+            VectorLines.i.Current.Line(Position - (Vector3.up * offset), Position + (Vector3.up * offset), Color, Width);
+            VectorLines.i.Current.Line(Position - (Vector3.right * offset), Position + (Vector3.right * offset), Color, Width);
         }
     }
 

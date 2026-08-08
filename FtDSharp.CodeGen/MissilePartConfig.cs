@@ -354,9 +354,9 @@ public static class MissilePartConfig
         var enumNames = enums.Select(e => e.Name).ToHashSet(StringComparer.Ordinal);
         var referencedEnumNames = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var definition in definitions)
+        foreach (MissilePartDefinition definition in definitions)
         {
-            foreach (var parameter in definition.Parameters)
+            foreach (MissileParameterDefinition parameter in definition.Parameters)
             {
                 if (parameter.EnumTypeName == null)
                     continue;

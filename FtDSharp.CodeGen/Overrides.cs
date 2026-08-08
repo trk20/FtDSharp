@@ -211,7 +211,7 @@ public static class Overrides
         if (PropertyRenames.TryGetValue(propertyName, out var renamed))
             return renamed;
 
-        if (dataPackageName != null && ConditionalRenames.TryGetValue(propertyName, out var conditional))
+        if (dataPackageName != null && ConditionalRenames.TryGetValue(propertyName, out (string NewName, string RequiredDataPackagePattern) conditional))
         {
             if (dataPackageName.Contains(conditional.RequiredDataPackagePattern))
                 return conditional.NewName;

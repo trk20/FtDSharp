@@ -8,16 +8,16 @@ public class BlockStoreScanner
     {
         var concreteStores = new Dictionary<Type, string>();
         var interfaceStores = new Dictionary<Type, string>();
-        var storageInterface = typeof(IBlockToConstructBlockTypeStorage);
+        Type storageInterface = typeof(IBlockToConstructBlockTypeStorage);
 
-        foreach (var prop in storageInterface.GetProperties())
+        foreach (System.Reflection.PropertyInfo prop in storageInterface.GetProperties())
         {
-            var propType = prop.PropertyType;
+            Type propType = prop.PropertyType;
 
             if (!propType.IsGenericType || propType.GetGenericTypeDefinition() != typeof(BlockStore<>))
                 continue;
 
-            var blockType = propType.GetGenericArguments()[0];
+            Type blockType = propType.GetGenericArguments()[0];
 
             if (blockType == typeof(Block))
                 continue;

@@ -46,10 +46,10 @@ namespace FtDSharp.Facades
             if (allConstruct == null) yield break;
 
             // Get weapons from main construct
-            var mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
+            List<ConstructableWeapon>? mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
             if (mainWeapons != null)
             {
-                foreach (var weapon in mainWeapons)
+                foreach (ConstructableWeapon weapon in mainWeapons)
                 {
                     if (weapon != null && weapon.IsAlive)
                     {
@@ -59,17 +59,17 @@ namespace FtDSharp.Facades
             }
 
             // Get weapons from all subconstructs
-            var subConstructs = allConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
+            List<SubConstruct>? subConstructs = allConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
             if (subConstructs != null)
             {
-                foreach (var subConstruct in subConstructs)
+                foreach (SubConstruct subConstruct in subConstructs)
                 {
                     if (subConstruct is AllConstruct subAll)
                     {
-                        var subWeapons = subAll.WeaponryRestricted?.Weapons;
+                        List<ConstructableWeapon>? subWeapons = subAll.WeaponryRestricted?.Weapons;
                         if (subWeapons != null)
                         {
-                            foreach (var weapon in subWeapons)
+                            foreach (ConstructableWeapon weapon in subWeapons)
                             {
                                 if (weapon != null && weapon.IsAlive)
                                 {
@@ -98,10 +98,10 @@ namespace FtDSharp.Facades
             var turrets = new List<ITurret>();
 
             // Get turrets from main construct
-            var mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
+            List<ConstructableWeapon>? mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
             if (mainWeapons != null)
             {
-                foreach (var weapon in mainWeapons)
+                foreach (ConstructableWeapon weapon in mainWeapons)
                 {
                     if (weapon is Turrets turret && turret.IsAlive)
                     {
@@ -111,17 +111,17 @@ namespace FtDSharp.Facades
             }
 
             // Get turrets from subconstructs
-            var subConstructs = allConstruct.AllBasicsRestricted?.SubConstructList;
+            List<SubConstruct>? subConstructs = allConstruct.AllBasicsRestricted?.SubConstructList;
             if (subConstructs != null)
             {
-                foreach (var subConstruct in subConstructs)
+                foreach (SubConstruct subConstruct in subConstructs)
                 {
                     if (subConstruct is AllConstruct subAll)
                     {
-                        var subWeapons = subAll.WeaponryRestricted?.Weapons;
+                        List<ConstructableWeapon>? subWeapons = subAll.WeaponryRestricted?.Weapons;
                         if (subWeapons != null)
                         {
-                            foreach (var weapon in subWeapons)
+                            foreach (ConstructableWeapon weapon in subWeapons)
                             {
                                 if (weapon is Turrets turret && turret.IsAlive)
                                 {
@@ -142,20 +142,20 @@ namespace FtDSharp.Facades
         public IEnumerable<IBlock> GetAllBlocks()
         {
             // Blocks on the main construct
-            foreach (var block in _construct.AllBasics.AliveAndDead.Blocks)
+            foreach (Block block in _construct.AllBasics.AliveAndDead.Blocks)
             {
                 if (block.IsStructural || !block.IsAlive) continue;
-                var wrapped = BlockFactory.Wrap(block);
+                IBlock? wrapped = BlockFactory.Wrap(block);
                 if (wrapped != null) yield return wrapped;
             }
 
             // Blocks on subconstructs
-            foreach (var sc in _construct.AllBasics.AllSubconstructsBelowUs)
+            foreach (SubConstruct sc in _construct.AllBasics.AllSubconstructsBelowUs)
             {
-                foreach (var block in sc.AllBasics.AliveAndDead.Blocks)
+                foreach (Block block in sc.AllBasics.AliveAndDead.Blocks)
                 {
                     if (block.IsStructural || !block.IsAlive) continue;
-                    var wrapped = BlockFactory.Wrap(block);
+                    IBlock? wrapped = BlockFactory.Wrap(block);
                     if (wrapped != null) yield return wrapped;
                 }
             }
@@ -168,11 +168,11 @@ namespace FtDSharp.Facades
 
             if (_construct.iBlockTypeStorage?.MissileLuaTransceiverStore?.Blocks != null)
             {
-                foreach (var transceiver in _construct.iBlockTypeStorage.MissileLuaTransceiverStore.Blocks)
+                foreach (MissileBlockLuaTransceiver? transceiver in _construct.iBlockTypeStorage.MissileLuaTransceiverStore.Blocks)
                 {
                     if (transceiver?.Missiles == null) continue;
 
-                    foreach (var missile in transceiver.Missiles)
+                    foreach (BrilliantSkies.Ftd.Missiles.Missile missile in transceiver.Missiles)
                     {
                         if (missile != null && missile.IsAlive())
                         {
@@ -180,7 +180,7 @@ namespace FtDSharp.Facades
                             seenIds.Add(id);
 
                             // Get or create cached facade
-                            if (!_missileCache.TryGetValue(id, out var facade))
+                            if (!_missileCache.TryGetValue(id, out MissileFacade? facade))
                             {
                                 facade = new MissileFacade(missile);
                                 _missileCache[id] = facade;
@@ -195,7 +195,7 @@ namespace FtDSharp.Facades
             if (_missileCache.Count > seenIds.Count)
             {
                 var toRemove = new List<int>();
-                foreach (var kvp in _missileCache)
+                foreach (KeyValuePair<int, MissileFacade> kvp in _missileCache)
                 {
                     if (!seenIds.Contains(kvp.Key))
                         toRemove.Add(kvp.Key);

@@ -34,10 +34,10 @@ public class TemplateRenderer
 
     private static Template LoadTemplate(string name)
     {
-        var assembly = typeof(TemplateRenderer).Assembly;
+        System.Reflection.Assembly assembly = typeof(TemplateRenderer).Assembly;
         var resourceName = $"FtDSharp.CodeGen.Templates.{name}";
 
-        using var stream = assembly.GetManifestResourceStream(resourceName)
+        using Stream stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Template not found: {resourceName}");
         using var reader = new StreamReader(stream);
         var content = reader.ReadToEnd();

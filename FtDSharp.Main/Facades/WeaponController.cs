@@ -96,7 +96,7 @@ namespace FtDSharp
         public WeaponController(ITurret turret)
         {
             if (turret == null) throw new ArgumentNullException(nameof(turret));
-            var inputItems = turret is TurretFacade tf ? tf.Weapons.Append(turret).ToList() : new List<IWeapon> { turret };
+            List<IWeapon> inputItems = turret is TurretFacade tf ? tf.Weapons.Append(turret).ToList() : new List<IWeapon> { turret };
             BuildHierarchy(inputItems);
         }
 
@@ -105,7 +105,7 @@ namespace FtDSharp
         /// </summary>
         public WeaponController(IEnumerable<IWeapon> weapons)
         {
-            var inputItems = weapons?.ToList() ?? throw new ArgumentNullException(nameof(weapons));
+            List<IWeapon> inputItems = weapons?.ToList() ?? throw new ArgumentNullException(nameof(weapons));
             if (inputItems.Count == 0)
                 throw new ArgumentException("At least one weapon is required", nameof(weapons));
             BuildHierarchy(inputItems);
@@ -157,10 +157,10 @@ namespace FtDSharp
         {
             if (!HasItems) return EmptyAimResult;
 
-            foreach (var weapon in _weapons)
+            foreach (WeaponItem weapon in _weapons)
                 weapon.CalculatedDirection = (worldPosition - weapon.WorldPosition).normalized;
 
-            foreach (var turret in _turrets)
+            foreach (TurretItem turret in _turrets)
             {
                 turret.CalculatedDirection = turret.HasWeapons
                     ? AverageDirection(turret.ClosestWeapons!)
@@ -230,7 +230,7 @@ namespace FtDSharp
             CalculateTurretDirections(context);
 
             // Phase 3: Aim all turrets and weapons
-            var aimResult = AimAll();
+            AimResult aimResult = AimAll();
 
             // Aggregate tracking results from weapons
             return AggregateTrackResults(aimResult);
@@ -246,7 +246,7 @@ namespace FtDSharp
         public bool Fire()
         {
             bool anyFired = false;
-            foreach (var weapon in _weapons)
+            foreach (WeaponItem weapon in _weapons)
             {
                 anyFired |= weapon.Facade.Fire();
             }
@@ -258,7 +258,7 @@ namespace FtDSharp
         /// </summary>
         public bool TryFireAt(Vector3 worldPosition)
         {
-            var result = AimAt(worldPosition);
+            AimResult result = AimAt(worldPosition);
             return result.IsOnTarget && Fire();
         }
 
@@ -272,7 +272,7 @@ namespace FtDSharp
             _turrets = new List<TurretItem>();
 
             var facadeLookup = new Dictionary<ConstructableWeapon, WeaponFacade>();
-            foreach (var item in inputItems)
+            foreach (IWeapon item in inputItems)
             {
                 if (item is WeaponFacade wf)
                     facadeLookup[wf.Weapon] = wf;
@@ -280,7 +280,7 @@ namespace FtDSharp
 
             var visited = new HashSet<ConstructableWeapon>();
 
-            foreach (var item in inputItems)
+            foreach (IWeapon item in inputItems)
             {
                 if (item is TurretFacade turretFacade)
                     DiscoverTurret(turretFacade, depth: 0, visited, facadeLookup);
@@ -325,9 +325,9 @@ namespace FtDSharp
             };
             _turrets.Add(turretItem);
 
-            foreach (var child in facade.Weapons)
+            foreach (IWeapon child in facade.Weapons)
             {
-                if (child is WeaponFacade childFacade && facadeLookup.TryGetValue(childFacade.Weapon, out var existingFacade))
+                if (child is WeaponFacade childFacade && facadeLookup.TryGetValue(childFacade.Weapon, out WeaponFacade? existingFacade))
                 {
                     if (existingFacade is TurretFacade nestedTurret)
                         DiscoverTurret(nestedTurret, depth + 1, visited, facadeLookup);
@@ -339,7 +339,7 @@ namespace FtDSharp
 
         private void LinkClosestWeaponsToTurrets()
         {
-            foreach (var turret in _turrets)
+            foreach (TurretItem turret in _turrets)
             {
                 var descendants = new List<WeaponItem>();
                 FindDescendantWeapons(turret.Facade, descendants);
@@ -351,11 +351,11 @@ namespace FtDSharp
                 }
 
                 int minDepth = int.MaxValue;
-                foreach (var w in descendants)
+                foreach (WeaponItem w in descendants)
                     if (w.Depth < minDepth) minDepth = w.Depth;
 
                 var closest = new List<WeaponItem>();
-                foreach (var w in descendants)
+                foreach (WeaponItem w in descendants)
                     if (w.Depth == minDepth) closest.Add(w);
 
                 turret.ClosestWeapons = closest;
@@ -364,7 +364,7 @@ namespace FtDSharp
 
         private void FindDescendantWeapons(TurretFacade turretFacade, List<WeaponItem> result)
         {
-            foreach (var child in turretFacade.Weapons)
+            foreach (IWeapon child in turretFacade.Weapons)
             {
                 if (child is TurretFacade nestedTurret)
                 {
@@ -372,7 +372,7 @@ namespace FtDSharp
                 }
                 else if (child is WeaponFacade weaponFacade)
                 {
-                    foreach (var item in _weapons)
+                    foreach (WeaponItem item in _weapons)
                     {
                         if (item.Weapon == weaponFacade.Weapon)
                         {
@@ -401,8 +401,8 @@ namespace FtDSharp
 
         private static Vector3 AverageDirection(List<WeaponItem> weapons)
         {
-            var sum = Vector3.zero;
-            foreach (var w in weapons)
+            Vector3 sum = Vector3.zero;
+            foreach (WeaponItem w in weapons)
             {
                 sum += w.CalculatedDirection;
             }
@@ -415,7 +415,7 @@ namespace FtDSharp
 
         private void CalculateWeaponDirections(TrackContext ctx)
         {
-            foreach (var weapon in _weapons)
+            foreach (WeaponItem weapon in _weapons)
             {
                 var projectileSpeed = ctx.Options.ProjectileSpeed ?? _overrideProjectileSpeed ?? weapon.ProjectileSpeed;
                 if (projectileSpeed <= 0) projectileSpeed = 500f;
@@ -435,12 +435,12 @@ namespace FtDSharp
 
         private void CalculateTurretDirections(TrackContext ctx)
         {
-            foreach (var turret in _turrets!)
+            foreach (TurretItem turret in _turrets!)
             {
                 if (turret.HasWeapons)
                 {
-                    var avgDir = Vector3.zero;
-                    foreach (var w in turret.ClosestWeapons!)
+                    Vector3 avgDir = Vector3.zero;
+                    foreach (WeaponItem w in turret.ClosestWeapons!)
                     {
                         avgDir += w.CalculatedDirection;
                     }
@@ -515,12 +515,12 @@ namespace FtDSharp
         {
             bool isOnTarget = false, isBlocked = false, canAim = false;
 
-            foreach (var turret in _turrets)
+            foreach (TurretItem turret in _turrets)
                 turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
 
-            foreach (var weapon in _weapons)
+            foreach (WeaponItem weapon in _weapons)
             {
-                var result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
+                AimResult result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
                 isOnTarget |= result.IsOnTarget;
                 isBlocked |= result.IsBlocked;
                 canAim |= result.CanAim;
@@ -529,7 +529,7 @@ namespace FtDSharp
                 weapon.Facade.SetTrackState(trackResult);
             }
 
-            var (tIsOnTarget, tIsBlocked, tCanAim) = DeriveTurretStates(includeTrackData: true);
+            (bool tIsOnTarget, bool tIsBlocked, bool tCanAim) = DeriveTurretStates(includeTrackData: true);
             isOnTarget |= tIsOnTarget;
             isBlocked |= tIsBlocked;
             canAim |= tCanAim;
@@ -545,12 +545,12 @@ namespace FtDSharp
         {
             bool isOnTarget = false, isBlocked = false, canAim = false;
 
-            foreach (var turret in _turrets)
+            foreach (TurretItem turret in _turrets)
                 turret.Facade.AimAtDirectionInternal(turret.CalculatedDirection);
 
-            foreach (var weapon in _weapons)
+            foreach (WeaponItem weapon in _weapons)
             {
-                var result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
+                AimResult result = weapon.Facade.AimAtDirectionInternal(weapon.CalculatedDirection);
                 weapon.Facade.SetAimState(result);
 
                 isOnTarget |= result.IsOnTarget;
@@ -558,7 +558,7 @@ namespace FtDSharp
                 canAim |= result.CanAim;
             }
 
-            var (tIsOnTarget, tIsBlocked, tCanAim) = DeriveTurretStates(includeTrackData: false);
+            (bool tIsOnTarget, bool tIsBlocked, bool tCanAim) = DeriveTurretStates(includeTrackData: false);
             isOnTarget |= tIsOnTarget;
             isBlocked |= tIsBlocked;
             canAim |= tCanAim;
@@ -575,7 +575,7 @@ namespace FtDSharp
         {
             bool isOnTarget = false, isBlocked = false, canAim = false;
 
-            foreach (var turret in _turrets)
+            foreach (TurretItem turret in _turrets)
             {
                 bool tOnTarget = false, tBlocked = false, tCanAim = false;
                 float flightTime = 0f;
@@ -585,7 +585,7 @@ namespace FtDSharp
 
                 if (turret.HasWeapons)
                 {
-                    foreach (var w in turret.ClosestWeapons!)
+                    foreach (WeaponItem w in turret.ClosestWeapons!)
                     {
                         tOnTarget |= w.Facade.OnTarget;
                         tBlocked |= w.Facade.IsBlocked;
@@ -629,7 +629,7 @@ namespace FtDSharp
             bool anyTerrainBlocking = false;
             bool allReady = true;
 
-            foreach (var weapon in _weapons)
+            foreach (WeaponItem weapon in _weapons)
             {
                 totalFlightTime += weapon.FlightTime;
                 lastAimPoint = weapon.AimPoint;

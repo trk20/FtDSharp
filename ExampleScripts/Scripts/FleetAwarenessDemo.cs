@@ -10,20 +10,20 @@ public class FleetAwarenessDemo
     {
         Drawing.Cross(Game.MainConstruct.Position, Color.white, width: 2f, scale: 5f);
 
-        foreach (var fleet in Friendly.Fleets)
+        foreach (IFleet fleet in Friendly.Fleets)
         {
-            var fleetPos = fleet.Position;
-            var flagshipPos = fleet.Flagship.Position;
+            Vector3 fleetPos = fleet.Position;
+            Vector3 flagshipPos = fleet.Flagship.Position;
 
-            foreach (var member in fleet.Members)
+            foreach (IFriendlyConstruct member in fleet.Members)
             {
-                var memberPos = member.Position;
+                Vector3 memberPos = member.Position;
 
                 Drawing.Gimbal(memberPos, radius: 8f, member.Rotation);
 
                 if (member.Velocity.sqrMagnitude > 1f)
                 {
-                    Drawing.Arrow(memberPos, memberPos + member.Velocity.normalized * 15f, Color.green, width: 1.5f);
+                    Drawing.Arrow(memberPos, memberPos + (member.Velocity.normalized * 15f), Color.green, width: 1.5f);
                 }
 
                 if (member.UniqueId != fleet.Flagship.UniqueId)

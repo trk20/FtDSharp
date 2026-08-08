@@ -11,13 +11,12 @@ namespace FtDSharp.Facades
     /// </summary>
     internal class TurretFacade : WeaponFacade, ITurret
     {
-        private readonly Turrets _turret;
         private readonly Lazy<IReadOnlyList<IWeapon>> _weapons;
         private readonly Lazy<WeaponController> _turretController;
 
         public TurretFacade(Turrets turret, AllConstruct allConstruct) : base(turret, allConstruct)
         {
-            _turret = turret;
+            TurretBlock = turret;
             _weapons = new Lazy<IReadOnlyList<IWeapon>>(DiscoverWeapons);
             // Controller includes this turret so hierarchy is handled correctly
             _turretController = new Lazy<WeaponController>(() => new WeaponController(this));
@@ -26,7 +25,7 @@ namespace FtDSharp.Facades
         /// <summary>
         /// Gets the underlying Turrets block. Internal use only.
         /// </summary>
-        internal Turrets TurretBlock => _turret;
+        internal Turrets TurretBlock { get; }
 
         public IReadOnlyList<IWeapon> Weapons => _weapons.Value;
 
@@ -35,7 +34,7 @@ namespace FtDSharp.Facades
             get
             {
                 // Extract azimuth from the turret's local rotation
-                Vector3 euler = _turret.lastLocalRotation.eulerAngles;
+                Vector3 euler = TurretBlock.lastLocalRotation.eulerAngles;
                 return euler.y > 180 ? euler.y - 360 : euler.y;
             }
         }
@@ -45,7 +44,7 @@ namespace FtDSharp.Facades
             get
             {
                 // Extract elevation from the turret's local rotation
-                Vector3 euler = _turret.lastLocalRotation.eulerAngles;
+                Vector3 euler = TurretBlock.lastLocalRotation.eulerAngles;
                 return euler.x > 180 ? euler.x - 360 : euler.x;
             }
         }
@@ -92,9 +91,19 @@ namespace FtDSharp.Facades
             return _turretController.Value.TryFireAt(worldPosition);
         }
 
+        public override bool TryFireAt(Vector3 worldPosition, FireOptions options)
+        {
+            return _turretController.Value.TryFireAt(worldPosition, options);
+        }
+
         public override bool Fire()
         {
             return _turretController.Value.Fire();
+        }
+
+        public override bool Fire(FireOptions options)
+        {
+            return _turretController.Value.Fire(options);
         }
 
         // --- Aggregate state properties from mounted weapons ---
@@ -140,20 +149,23 @@ namespace FtDSharp.Facades
             var visited = new HashSet<ConstructableWeapon>();
 
             // Get weapons directly registered to the turret
-            if (_turret.weaponObj != null)
+            if (TurretBlock.weaponObj != null)
             {
-                foreach (ConstructableWeapon weapon in _turret.weaponObj)
+                foreach (ConstructableWeapon weapon in TurretBlock.weaponObj)
                 {
-                    if (weapon == null || weapon == _turret || !weapon.IsAlive || visited.Contains(weapon))
+                    if (weapon == null || weapon == TurretBlock || !weapon.IsAlive || visited.Contains(weapon))
                         continue;
                     visited.Add(weapon);
+
+                    if (!WeaponControlAuthority.HasControllingLwc(weapon))
+                        continue;
 
                     weapons.Add(BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, AllConstruct));
                 }
             }
 
             // Get weapons from nested subconstructs (turrets on turrets, spinblocks on turrets, etc.)
-            ISubConstructBlock? subConstruct = _turret.SubConstruct;
+            ISubConstructBlock? subConstruct = TurretBlock.SubConstruct;
             if (subConstruct != null)
             {
                 List<SubConstruct>? subConstructList = subConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
@@ -166,9 +178,12 @@ namespace FtDSharp.Facades
                         {
                             foreach (ConstructableWeapon weapon in nestedWeapons)
                             {
-                                if (weapon == null || weapon == _turret || !weapon.IsAlive || visited.Contains(weapon))
+                                if (weapon == null || weapon == TurretBlock || !weapon.IsAlive || visited.Contains(weapon))
                                     continue;
                                 visited.Add(weapon);
+
+                                if (!WeaponControlAuthority.HasControllingLwc(weapon))
+                                    continue;
 
                                 AllConstruct nestedAllConstruct = nestedSub as AllConstruct ?? AllConstruct;
                                 weapons.Add(BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, nestedAllConstruct));

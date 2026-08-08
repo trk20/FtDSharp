@@ -17,10 +17,8 @@ namespace FtDSharp
         private float? _overrideProjectileSpeed;
         private List<WeaponItem> _weapons = null!;
         private List<TurretItem> _turrets = null!;
-        private ControlledItems _controlled = null!;
-
-        private static readonly AimResult EmptyAimResult = new AimResult(false, false, false);
-        private static readonly TrackResult EmptyTrackResult = new TrackResult(EmptyAimResult, 0f, Vector3.zero, false, false);
+        private static readonly AimResult _emptyAimResult = new(false, false, false);
+        private static readonly TrackResult _emptyTrackResult = new(_emptyAimResult, 0f, Vector3.zero, false, false);
 
         #region Nested Types
 
@@ -118,7 +116,7 @@ namespace FtDSharp
         /// <summary>
         /// Provides access to the weapons and turrets controlled by this controller.
         /// </summary>
-        public ControlledItems Controlled => _controlled;
+        public ControlledItems Controlled { get; private set; } = null!;
 
         /// <summary>
         /// Whether all weapons are known types that can fire.
@@ -141,10 +139,7 @@ namespace FtDSharp
         /// <summary>
         /// Rebuilds the hierarchy. Call if weapons are added/removed from turrets.
         /// </summary>
-        public void RebuildHierarchy()
-        {
-            BuildHierarchy(_controlled.All.ToList());
-        }
+        public void RebuildHierarchy() => BuildHierarchy(Controlled.All.ToList());
 
         #endregion
 
@@ -155,7 +150,7 @@ namespace FtDSharp
         /// </summary>
         public AimResult AimAt(Vector3 worldPosition)
         {
-            if (!HasItems) return EmptyAimResult;
+            if (!HasItems) return _emptyAimResult;
 
             foreach (WeaponItem weapon in _weapons)
                 weapon.CalculatedDirection = (worldPosition - weapon.WorldPosition).normalized;
@@ -177,43 +172,35 @@ namespace FtDSharp
         /// <summary>
         /// Tracks a moving target with lead calculation.
         /// </summary>
-        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity)
-        {
-            return Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default);
-        }
+        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity) => Track(targetPosition, targetVelocity, Vector3.zero, TrackOptions.Default);
 
         /// <summary>
         /// Tracks a moving target with lead calculation including acceleration.
         /// </summary>
-        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration)
-        {
-            return Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default);
-        }
+        public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration) => Track(targetPosition, targetVelocity, targetAcceleration, TrackOptions.Default);
 
         /// <summary>
         /// Tracks a targetable object with lead calculation.
         /// </summary>
         public TrackResult Track(ITargetable targetable)
         {
-            if (targetable == null) return EmptyTrackResult;
-            return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default);
+            return targetable == null
+                ? _emptyTrackResult
+                : Track(targetable.Position, targetable.Velocity, targetable.Acceleration, TrackOptions.Default);
         }
 
         /// <summary>
         /// Tracks a targetable object with custom tracking options.
         /// </summary>
-        public TrackResult Track(ITargetable targetable, TrackOptions options)
-        {
-            if (targetable == null) return EmptyTrackResult;
-            return Track(targetable.Position, targetable.Velocity, targetable.Acceleration, options);
-        }
+        public TrackResult Track(ITargetable targetable, TrackOptions options) => 
+            targetable == null ? _emptyTrackResult : Track(targetable.Position, targetable.Velocity, targetable.Acceleration, options);
 
         /// <summary>
         /// Tracks a moving target with lead calculation and custom options.
         /// </summary>
         public TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
         {
-            if (!HasItems) return EmptyTrackResult;
+            if (!HasItems) return _emptyTrackResult;
 
             var context = new TrackContext(
                 targetPosition,
@@ -243,12 +230,17 @@ namespace FtDSharp
         /// <summary>
         /// Fires all weapons that can fire (excludes turrets to prevent recursion).
         /// </summary>
-        public bool Fire()
+        public bool Fire() => Fire(FireOptions.Default);
+
+        /// <summary>
+        /// Fires all weapons that can fire with the given options.
+        /// </summary>
+        public bool Fire(FireOptions options)
         {
-            bool anyFired = false;
+            var anyFired = false;
             foreach (WeaponItem weapon in _weapons)
             {
-                anyFired |= weapon.Facade.Fire();
+                anyFired |= weapon.Facade.Fire(options);
             }
             return anyFired;
         }
@@ -256,10 +248,15 @@ namespace FtDSharp
         /// <summary>
         /// Aims and fires all weapons at a position.
         /// </summary>
-        public bool TryFireAt(Vector3 worldPosition)
+        public bool TryFireAt(Vector3 worldPosition) => TryFireAt(worldPosition, FireOptions.Default);
+
+        /// <summary>
+        /// Aims and fires all weapons at a position with the given options.
+        /// </summary>
+        public bool TryFireAt(Vector3 worldPosition, FireOptions options)
         {
             AimResult result = AimAt(worldPosition);
-            return result.IsOnTarget && Fire();
+            return result.IsOnTarget && Fire(options);
         }
 
         #endregion
@@ -291,7 +288,7 @@ namespace FtDSharp
             // No depth sorting needed - JustTheTopLevel ensures each item is aimed independently
             LinkClosestWeaponsToTurrets();
 
-            _controlled = new ControlledItems(
+            Controlled = new ControlledItems(
                 _weapons.Select(w => (IWeapon)w.Facade),
                 _turrets.Select(t => t.Facade)
             );
@@ -327,13 +324,19 @@ namespace FtDSharp
 
             foreach (IWeapon child in facade.Weapons)
             {
-                if (child is WeaponFacade childFacade && facadeLookup.TryGetValue(childFacade.Weapon, out WeaponFacade? existingFacade))
-                {
-                    if (existingFacade is TurretFacade nestedTurret)
-                        DiscoverTurret(nestedTurret, depth + 1, visited, facadeLookup);
-                    else
-                        DiscoverWeapon(existingFacade, depth + 1, visited);
-                }
+                // Mounted weapons are discovered from the turret even when the caller only
+                // passed the turret (e.g. CreateController(Weapons.Turrets)).
+                if (child is not WeaponFacade childFacade)
+                    continue;
+
+                WeaponFacade resolved = facadeLookup.TryGetValue(childFacade.Weapon, out WeaponFacade? existing)
+                    ? existing
+                    : childFacade;
+
+                if (resolved is TurretFacade nestedTurret)
+                    DiscoverTurret(nestedTurret, depth + 1, visited, facadeLookup);
+                else
+                    DiscoverWeapon(resolved, depth + 1, visited);
             }
         }
 
@@ -392,11 +395,9 @@ namespace FtDSharp
 
         private Vector3 GetConstructVelocity()
         {
-            if (_weapons.Count > 0)
-                return _weapons[0].Facade.ParentConstruct?.Velocity ?? Vector3.zero;
-            if (_turrets.Count > 0)
-                return _turrets[0].Facade.ParentConstruct?.Velocity ?? Vector3.zero;
-            return Vector3.zero;
+            return _weapons.Count > 0
+                ? _weapons[0].Facade.ParentConstruct?.Velocity ?? Vector3.zero
+                : _turrets.Count > 0 ? _turrets[0].Facade.ParentConstruct?.Velocity ?? Vector3.zero : Vector3.zero;
         }
 
         private static Vector3 AverageDirection(List<WeaponItem> weapons)

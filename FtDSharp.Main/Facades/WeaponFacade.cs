@@ -1,4 +1,5 @@
 using System;
+using BrilliantSkies.Blocks.Ai.WeaponControl.Failsafe;
 using BrilliantSkies.Core.Ballistics.External.AimingWithoutDrag;
 using BrilliantSkies.Core.Logger;
 using BrilliantSkies.Ftd.Planets;
@@ -13,9 +14,7 @@ namespace FtDSharp.Facades
     /// </summary>
     internal class WeaponFacade : BlockFacadeBase, IWeapon
     {
-        private readonly ConstructableWeapon _weapon;
         private readonly FiredMunitionReturn _fireReturn;
-        private readonly AllConstruct _allConstruct;
         private WeaponType? _cachedWeaponType;
         private readonly AimingModule _aimingModule;
 
@@ -25,8 +24,8 @@ namespace FtDSharp.Facades
 
         public WeaponFacade(ConstructableWeapon weapon, AllConstruct allConstruct) : base(weapon)
         {
-            _weapon = weapon;
-            _allConstruct = allConstruct;
+            Weapon = weapon;
+            AllConstruct = allConstruct;
             _fireReturn = new FiredMunitionReturn();
             _aimingModule = new AimingModule(new GroundHitChecker());
         }
@@ -34,12 +33,12 @@ namespace FtDSharp.Facades
         /// <summary>
         /// Gets the underlying ConstructableWeapon. Internal use only.
         /// </summary>
-        internal ConstructableWeapon Weapon => _weapon;
+        internal ConstructableWeapon Weapon { get; }
 
         /// <summary>
         /// Gets the AllConstruct this weapon belongs to. Internal use only.
         /// </summary>
-        internal AllConstruct AllConstruct => _allConstruct;
+        internal AllConstruct AllConstruct { get; }
 
         // IEquatable<IWeapon> - delegates to base IBlock equality
         public bool Equals(IWeapon? other) => base.Equals(other);
@@ -55,9 +54,9 @@ namespace FtDSharp.Facades
 
         public Vector3 AimDirection => GetAimDirection();
 
-        public int SlotMask => _weapon.WeaponSlotMask;
+        public int SlotMask => Weapon.WeaponSlotMask;
 
-        public float ProjectileSpeed => _weapon.SpeedReader;
+        public float ProjectileSpeed => Weapon.SpeedReader;
 
         /// <summary>
         /// Checks if this weapon is ready to fire based on weapon-type-specific conditions.
@@ -69,7 +68,9 @@ namespace FtDSharp.Facades
         public bool OnTarget => _lastResult?.IsOnTarget ?? false;
         public bool CanAim => _lastResult?.CanAim ?? false;
         public bool IsBlocked => _lastResult?.AimResult.IsBlocked ?? false;
-        public virtual bool CanFire => _lastResult?.CanFire ?? false;
+        public virtual bool CanFire =>
+            (_lastResult?.CanFire ?? false) && WeaponControlAuthority.AllowsFire(Weapon, FireOptions.Default);
+
         public float FlightTime => _lastResult?.FlightTime ?? 0f;
         public Vector3 AimPoint => _lastResult?.AimPoint ?? Vector3.zero;
         public bool BlockedByTerrain => _lastResult?.IsTerrainBlocking ?? false;
@@ -77,10 +78,7 @@ namespace FtDSharp.Facades
         /// <summary>
         /// Stores the tracking result state. Called internally after Track operations.
         /// </summary>
-        internal void SetTrackState(TrackResult result)
-        {
-            _lastResult = result;
-        }
+        internal void SetTrackState(TrackResult result) => _lastResult = result;
 
         /// <summary>
         /// Stores the aim result state (creates TrackResult with aim data only).
@@ -92,6 +90,13 @@ namespace FtDSharp.Facades
 
         public virtual AimResult AimAt(Vector3 worldPosition)
         {
+            if (!WeaponControlAuthority.HasControllingLwc(Weapon))
+            {
+                var denied = new AimResult(false, false, false);
+                SetAimState(denied);
+                return denied;
+            }
+
             AimResult result = AimAtInternal(worldPosition);
             SetAimState(result);
             return result;
@@ -104,7 +109,7 @@ namespace FtDSharp.Facades
         /// </summary>
         internal AimResult AimAtInternal(Vector3 worldPosition)
         {
-            Vector3 direction = (worldPosition - _weapon.GameWorldPosition).normalized;
+            Vector3 direction = (worldPosition - Weapon.GameWorldPosition).normalized;
             return AimAtDirectionInternal(direction);
         }
 
@@ -115,10 +120,15 @@ namespace FtDSharp.Facades
         /// </summary>
         internal AimResult AimAtDirectionInternal(Vector3 direction)
         {
+            if (!WeaponControlAuthority.HasControllingLwc(Weapon))
+                return new AimResult(false, false, false);
+
+            WeaponControlAuthority.ClaimScriptControl(Weapon);
+
             var statusReturn = new WeaponStatusReturn();
             statusReturn.Setup(enumAimType.direction, direction, Vector3.zero, 0);
             statusReturn.JustTheTopLevel = true; // Setup sets this to false so can't set with constructor
-            _weapon.CheckDirection(statusReturn);
+            Weapon.CheckDirection(statusReturn);
 
             // Read results from weapon status based on weapon type
             WeaponType type = DetermineWeaponType();
@@ -150,8 +160,15 @@ namespace FtDSharp.Facades
 
         public virtual TrackResult Track(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, TrackOptions options)
         {
+            if (!WeaponControlAuthority.HasControllingLwc(Weapon))
+            {
+                var denied = new TrackResult(new AimResult(false, false, false), 0f, Vector3.zero, false, false);
+                SetTrackState(denied);
+                return denied;
+            }
+
             // Calculate lead for THIS weapon only, aim only this weapon (no turret control)
-            Vector3 weaponPos = _weapon.GameWorldPosition;
+            Vector3 weaponPos = Weapon.GameWorldPosition;
             var projectileSpeed = options.ProjectileSpeed ?? ProjectileSpeed;
             if (projectileSpeed <= 0) projectileSpeed = 500f;
 
@@ -208,63 +225,78 @@ namespace FtDSharp.Facades
         }
 
 
-        public virtual bool Fire()
-        {
-            return FireInternal();
-        }
+        public virtual bool Fire() => Fire(FireOptions.Default);
 
-        internal bool FireInternal()
+        public virtual bool Fire(FireOptions options) => FireInternal(options);
+
+        internal bool FireInternal() => FireInternal(FireOptions.Default);
+
+        internal bool FireInternal(FireOptions options)
         {
-            _fireReturn.Setup(0, _allConstruct.GetGunnerReward());
+            if (!WeaponControlAuthority.AllowsFire(Weapon, options))
+                return false;
+
+            if (!WeaponControlAuthority.TryGetControllingLwc(Weapon, out var lwc) || lwc == null)
+                return false;
+
+            WeaponControlAuthority.ClaimScriptControl(Weapon);
+
+            _fireReturn.Setup(0, AllConstruct.GetGunnerReward());
             _fireReturn.InteractWithMissiles = true;
-            _weapon.Fire(_fireReturn);
+            ControllerFailsafe? failsafe = options.RespectFailsafe
+                ? WeaponControlAuthority.GetFailsafe(lwc)
+                : null;
+            _fireReturn.FailSafe = failsafe!;
+            Weapon.Fire(_fireReturn);
             return _fireReturn.GetFiredAny();
         }
 
-        public virtual bool TryFireAt(Vector3 worldPosition)
+        public virtual bool TryFireAt(Vector3 worldPosition) => TryFireAt(worldPosition, FireOptions.Default);
+
+        public virtual bool TryFireAt(Vector3 worldPosition, FireOptions options)
         {
             AimResult result = AimAt(worldPosition);
             if (result.IsOnTarget && IsReady)
             {
-                return Fire();
+                return Fire(options);
             }
             return false;
         }
 
         private Vector3 GetAimDirection()
         {
-            if (_weapon is Turrets turret)
+            if (Weapon is Turrets turret)
             {
                 return turret.GameWorldRotation * turret.FiringArc.LastGoodLocalDirection;
             }
-            if (_weapon is CannonFiringPiece cannon)
+            if (Weapon is CannonFiringPiece cannon)
             {
                 return cannon.direction;
             }
-            if (_weapon is AdvCannonFiringPiece advCannon)
+            if (Weapon is AdvCannonFiringPiece advCannon)
             {
                 return advCannon.direction;
             }
-            if (_weapon is PlasmaMantlet plasma)
+            if (Weapon is PlasmaMantlet plasma)
             {
                 return plasma._lerpDirection;
             }
-            if (_weapon is PlasmaMantletAA plasmaAA)
+            if (Weapon is PlasmaMantletAA plasmaAA)
             {
                 return plasmaAA._lerpDirection;
             }
-            if (_weapon is FlamerMain flamer)
+            if (Weapon is FlamerMain flamer)
             {
                 return flamer.GameWorldRotation * flamer.FiringArc.LastGoodLocalDirection;
             }
-            if (_weapon is WorldWarCannonBase wwCannon)
+            if (Weapon is WorldWarCannonBase wwCannon)
             {
                 return wwCannon.GetFireDirection();
             }
-            return _weapon.GameWorldRotation * Vector3.forward;
+            return Weapon.GameWorldRotation * Vector3.forward;
         }
 
-        private WeaponType DetermineWeaponType() => _weapon switch
+        private WeaponType DetermineWeaponType() => Weapon switch
         {
             Turrets => WeaponType.Turret,
             AdvCannonFiringPiece => WeaponType.APS,
@@ -305,7 +337,7 @@ namespace FtDSharp.Facades
         /// </summary>
         private bool CheckIsReady()
         {
-            return _weapon switch
+            return Weapon switch
             {
                 AdvCannonFiringPiece aps => CheckApsReady(aps),
                 CannonFiringPiece cram => CheckCramReady(cram),
@@ -348,7 +380,7 @@ namespace FtDSharp.Facades
                 // Check railgun energy (if applicable)
                 if (aps.Node.RailgunCapacity > 0f && ApsRailEnergy != null)
                 {
-                    IResourcePacket energy = _allConstruct.Main.GetForce().Energy;
+                    IResourcePacket energy = AllConstruct.Main.GetForce().Energy;
                     var railEnergy = ApsRailEnergy(aps);
                     var energyNeeded = Math.Min(aps.Data.EnergyToUse, nextShell.Propellant.MaxRailDraw);
 
@@ -439,7 +471,7 @@ namespace FtDSharp.Facades
                 float energyMultiplier = (int)plasma.EmitterType == 1 ? 0.5f : 1f; // Destabilizer type
                 float energyNeeded = energyMultiplier * projectileCount * chargeTarget * acceleratorEnergy;
 
-                IResourcePacket energy = _allConstruct.Main.GetForce().Energy;
+                IResourcePacket energy = AllConstruct.Main.GetForce().Energy;
                 if (energy.Quantity < energyNeeded) return false;
 
                 return true;
@@ -476,7 +508,7 @@ namespace FtDSharp.Facades
                 float energyMultiplier = (int)plasma.EmitterType == 1 ? 0.5f : 1f;
                 float energyNeeded = energyMultiplier * projectileCount * chargeTarget * acceleratorEnergy;
 
-                IResourcePacket energy = _allConstruct.Main.GetForce().Energy;
+                IResourcePacket energy = AllConstruct.Main.GetForce().Energy;
                 if (energy.Quantity < energyNeeded) return false;
 
                 return true;

@@ -1,38 +1,37 @@
 using System;
 using System.Threading;
 
-namespace FtDSharp
+namespace FtDSharp;
+
+public static class ScriptContext
 {
-    public static class ScriptContext
+    private static readonly AsyncLocal<IProviderScope?> Scope = new();
+
+    internal static IProviderScope? Current
     {
-        private static readonly AsyncLocal<IProviderScope?> Scope = new();
+        get => Scope.Value;
+        set => Scope.Value = value;
+    }
 
-        internal static IProviderScope? Current
+    public static IDisposable Push(IProviderScope scope)
+    {
+        IProviderScope? previous = Scope.Value;
+        Scope.Value = scope;
+        return new ScopeGuard(previous);
+    }
+
+    private sealed class ScopeGuard : IDisposable
+    {
+        private readonly IProviderScope? _previous;
+
+        public ScopeGuard(IProviderScope? previous)
         {
-            get => Scope.Value;
-            set => Scope.Value = value;
+            _previous = previous;
         }
 
-        public static IDisposable Push(IProviderScope scope)
+        public void Dispose()
         {
-            IProviderScope? previous = Scope.Value;
-            Scope.Value = scope;
-            return new ScopeGuard(previous);
-        }
-
-        private sealed class ScopeGuard : IDisposable
-        {
-            private readonly IProviderScope? _previous;
-
-            public ScopeGuard(IProviderScope? previous)
-            {
-                _previous = previous;
-            }
-
-            public void Dispose()
-            {
-                Scope.Value = _previous;
-            }
+            Scope.Value = _previous;
         }
     }
 }

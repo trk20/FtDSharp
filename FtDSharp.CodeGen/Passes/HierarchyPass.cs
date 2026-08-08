@@ -10,12 +10,12 @@ public static class HierarchyPass
         Log.Debug("Linking parent types for {Count} blocks...", blocks.Count);
         var blocksByType = blocks.ToDictionary(b => b.GameType, b => b);
 
-        foreach (var block in blocks)
+        foreach (BlockDefinition block in blocks)
         {
-            var current = block.GameType.BaseType;
+            Type? current = block.GameType.BaseType;
             while (current != null && current != typeof(Block) && current != typeof(object))
             {
-                if (blocksByType.TryGetValue(current, out var parentBlock))
+                if (blocksByType.TryGetValue(current, out BlockDefinition? parentBlock))
                 {
                     block.Parent = parentBlock;
                     break;

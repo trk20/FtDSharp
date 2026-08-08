@@ -5,8 +5,8 @@ using static UnityEngine.Mathf;
 /// </summary>
 public class GenericBlockGetterSetterDemo
 {
-    private const float YawAmplitude = 15f;
-    private const float YawSpeed = 2f;
+    private const float _yawAmplitude = 15f;
+    private const float _yawSpeed = 2f;
 
     [OnStart]
     public void Initialize()
@@ -26,20 +26,20 @@ public class GenericBlockGetterSetterDemo
             return;
         }
 
-        float totalPressure = 0f;
-        foreach (var jet in Blocks.SteamJets)
+        var totalPressure = 0f;
+        foreach (ISteamJet jet in Blocks.SteamJets)
         {
             Log($"SteamJet [{jet.UniqueId}] at {jet.LocalPosition}: " +
                 $"Pressure={jet.PressureReader:F2}, MaxSteam={jet.MaxSteam:F0}");
             totalPressure += jet.PressureReader;
         }
 
-        float avgPressure = totalPressure / Blocks.SteamJets.Count;
+        var avgPressure = totalPressure / Blocks.SteamJets.Count;
         Log($"Average pressure across {Blocks.SteamJets.Count} jets: {avgPressure:F2}");
 
 
-        float yawAngle = Sin(Game.Time * YawSpeed) * YawAmplitude;
-        foreach (var jet in Blocks.SteamJets)
+        var yawAngle = Sin(Game.Time * _yawSpeed) * _yawAmplitude;
+        foreach (ISteamJet jet in Blocks.SteamJets)
         {
             jet.YawAngle = yawAngle;
         }

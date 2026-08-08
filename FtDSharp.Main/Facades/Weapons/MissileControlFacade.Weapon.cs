@@ -6,7 +6,7 @@ namespace FtDSharp.Facades
 
         public override bool Fire()
         {
-            var forward = Weapon.GameWorldRotation * UnityEngine.Vector3.forward;
+            UnityEngine.Vector3 forward = Weapon.GameWorldRotation * UnityEngine.Vector3.forward;
             SetAimState(AimAtDirectionInternal(forward));
             return FireInternal();
         }
@@ -16,14 +16,14 @@ namespace FtDSharp.Facades
             get
             {
                 var mc = (MissileControl)Weapon;
-                var node = mc.Node;
+                BrilliantSkies.Blocks.MissileComponents.MissileNode node = mc.Node;
                 if (node == null) return 0;
 
                 int count = 0;
-                foreach (var pad in node.firingOrder)
+                foreach (LaunchpadAbstract pad in node.firingOrder)
                 {
                     if (pad == null) continue;
-                    foreach (var tube in pad.MissileTubes)
+                    foreach (MissileTube tube in pad.MissileTubes)
                     {
                         if (tube != null && tube.Loaded) count++;
                     }
@@ -37,13 +37,13 @@ namespace FtDSharp.Facades
             get
             {
                 var mc = (MissileControl)Weapon;
-                var node = mc.Node;
+                BrilliantSkies.Blocks.MissileComponents.MissileNode node = mc.Node;
                 if (node == null) return 0;
 
                 int count = 0;
                 for (int i = 0; i < node.launchPads.Count; i++)
                 {
-                    var pad = node.launchPads[i];
+                    LaunchpadAbstract pad = node.launchPads[i];
                     if (pad?.BlueprintBuilder?.GantryCount > 0)
                         count += pad.MissileTubes.Count;
                 }

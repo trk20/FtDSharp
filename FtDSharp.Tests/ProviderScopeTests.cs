@@ -14,7 +14,7 @@ public class ProviderScopeTests
         {
             var scope = new TestProviderScope();
 
-            var guard = ScriptContext.Push(scope);
+            IDisposable guard = ScriptContext.Push(scope);
 
             Assert.Same(scope, ScriptContext.Current);
 

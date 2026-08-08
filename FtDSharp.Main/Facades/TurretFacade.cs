@@ -35,7 +35,7 @@ namespace FtDSharp.Facades
             get
             {
                 // Extract azimuth from the turret's local rotation
-                var euler = _turret.lastLocalRotation.eulerAngles;
+                Vector3 euler = _turret.lastLocalRotation.eulerAngles;
                 return euler.y > 180 ? euler.y - 360 : euler.y;
             }
         }
@@ -45,7 +45,7 @@ namespace FtDSharp.Facades
             get
             {
                 // Extract elevation from the turret's local rotation
-                var euler = _turret.lastLocalRotation.eulerAngles;
+                Vector3 euler = _turret.lastLocalRotation.eulerAngles;
                 return euler.x > 180 ? euler.x - 360 : euler.x;
             }
         }
@@ -142,7 +142,7 @@ namespace FtDSharp.Facades
             // Get weapons directly registered to the turret
             if (_turret.weaponObj != null)
             {
-                foreach (var weapon in _turret.weaponObj)
+                foreach (ConstructableWeapon weapon in _turret.weaponObj)
                 {
                     if (weapon == null || weapon == _turret || !weapon.IsAlive || visited.Contains(weapon))
                         continue;
@@ -153,24 +153,24 @@ namespace FtDSharp.Facades
             }
 
             // Get weapons from nested subconstructs (turrets on turrets, spinblocks on turrets, etc.)
-            var subConstruct = _turret.SubConstruct;
+            ISubConstructBlock? subConstruct = _turret.SubConstruct;
             if (subConstruct != null)
             {
-                var subConstructList = subConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
+                List<SubConstruct>? subConstructList = subConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
                 if (subConstructList != null)
                 {
-                    foreach (var nestedSub in subConstructList)
+                    foreach (SubConstruct nestedSub in subConstructList)
                     {
-                        var nestedWeapons = nestedSub.WeaponryRestricted?.Weapons;
+                        List<ConstructableWeapon>? nestedWeapons = nestedSub.WeaponryRestricted?.Weapons;
                         if (nestedWeapons != null)
                         {
-                            foreach (var weapon in nestedWeapons)
+                            foreach (ConstructableWeapon weapon in nestedWeapons)
                             {
                                 if (weapon == null || weapon == _turret || !weapon.IsAlive || visited.Contains(weapon))
                                     continue;
                                 visited.Add(weapon);
 
-                                var nestedAllConstruct = nestedSub as AllConstruct ?? AllConstruct;
+                                AllConstruct nestedAllConstruct = nestedSub as AllConstruct ?? AllConstruct;
                                 weapons.Add(BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, nestedAllConstruct));
                             }
                         }

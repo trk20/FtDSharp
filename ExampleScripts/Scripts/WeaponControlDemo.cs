@@ -14,21 +14,21 @@ public class WeaponControlDemo
         Log($"  APS: {Weapons.APS.Count}  CRAM: {Weapons.CRAM.Count}  Laser: {Weapons.Lasers.Count}  Plasma: {Weapons.Plasma.Count}");
         Log($"  PAC: {Weapons.ParticleCannons.Count}  Flamer: {Weapons.Flamers.Count}  Missile: {Weapons.MissileControllers.Count}  Simple: {Weapons.SimpleWeapons.Count}");
 
-        foreach (var turret in Weapons.Turrets.Where(t => t.Parent == null))
+        foreach (ITurret? turret in Weapons.Turrets.Where(t => t.Parent == null))
         {
             Log($"Turret {turret.UniqueId}: {turret.Weapons.Count(w => w.IsReady)}/{turret.Weapons.Count} weapons ready");
 
-            foreach (var weapon in turret.Weapons)
+            foreach (IWeapon weapon in turret.Weapons)
                 LogWeaponStatus(weapon);
         }
 
-        foreach (var weapon in Weapons.All.Where(w => w.Parent == null))
+        foreach (IWeapon? weapon in Weapons.All.Where(w => w.Parent == null))
             LogWeaponStatus(weapon);
 
 
-        var mainframe = AI.HighestPriorityMainframe;
+        IMainframe mainframe = AI.HighestPriorityMainframe;
 
-        var target = mainframe.PrimaryTarget;
+        ITarget? target = mainframe.PrimaryTarget;
         if (target == null) { Log("No target"); return; }
 
         Log($"Target: {target.Name}");
@@ -36,15 +36,15 @@ public class WeaponControlDemo
 
         // aim turret + mounted weapons, updates each of their states accordingly (OnTarget, CanAim, CanFire, etc.)
         Log("Turrets:");
-        foreach (var turret in Weapons.Turrets.Where(t => t.Parent == null))
+        foreach (ITurret? turret in Weapons.Turrets.Where(t => t.Parent == null))
         {
             turret.Track(target);
-            var turretStatusColor = turret.CanFire ? Color.green : (turret.CanAim ? Color.yellow : Color.red);
+            Color turretStatusColor = turret.CanFire ? Color.green : (turret.CanAim ? Color.yellow : Color.red);
 
-            foreach (var weapon in turret.Weapons)
+            foreach (IWeapon weapon in turret.Weapons)
             {
-                var weaponStatusColor = weapon.CanFire ? Color.green : (weapon.CanAim ? Color.yellow : Color.red);
-                Drawing.Arrow(weapon.WorldPosition, weapon.WorldPosition + weapon.AimDirection * 30f, weaponStatusColor, width: 1f);
+                Color weaponStatusColor = weapon.CanFire ? Color.green : (weapon.CanAim ? Color.yellow : Color.red);
+                Drawing.Arrow(weapon.WorldPosition, weapon.WorldPosition + (weapon.AimDirection * 30f), weaponStatusColor, width: 1f);
             }
             Drawing.Point(turret.WorldPosition, turretStatusColor, size: 3f);
 
@@ -52,12 +52,12 @@ public class WeaponControlDemo
         }
 
         Log("Standalone weapons:");
-        foreach (var weapon in Weapons.All.Where(w => w.Parent == null))
+        foreach (IWeapon? weapon in Weapons.All.Where(w => w.Parent == null))
         {
-            var result = weapon.Track(target);
-            var color = result.CanFire ? Color.green : (result.CanAim ? Color.yellow : Color.red);
+            TrackResult result = weapon.Track(target);
+            Color color = result.CanFire ? Color.green : (result.CanAim ? Color.yellow : Color.red);
 
-            Drawing.Arrow(weapon.WorldPosition, weapon.WorldPosition + weapon.AimDirection * 30f, color, width: 1f);
+            Drawing.Arrow(weapon.WorldPosition, weapon.WorldPosition + (weapon.AimDirection * 30f), color, width: 1f);
             Drawing.Point(weapon.WorldPosition, color, size: 2f);
 
             if (result.CanFire) weapon.Fire();

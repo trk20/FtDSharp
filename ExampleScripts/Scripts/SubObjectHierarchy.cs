@@ -8,7 +8,7 @@ public class SubObjectHierarchy
     public void Update()
     {
         ClearLogs();
-        foreach (var sub in Blocks.SpinBlocks)
+        foreach (ISpinBlock sub in Blocks.SpinBlocks)
         {
             Log($"SpinBlock {sub.UniqueId} has parent {sub.Parent?.UniqueId ?? -1}");
         }

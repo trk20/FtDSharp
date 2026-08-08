@@ -12,14 +12,14 @@ public static class BlockPipeline
     public static List<BlockDefinition> Run()
     {
         Log.Debug("Fetching block types and block stores...");
-        var rawBlocks = new BlockScanner().Scan(typeof(Block).Assembly);
-        var (concreteStores, interfaceStores) = new BlockStoreScanner().Scan();
+        List<RawBlockInfo> rawBlocks = new BlockScanner().Scan(typeof(Block).Assembly);
+        (Dictionary<Type, string> concreteStores, Dictionary<Type, string> interfaceStores) = new BlockStoreScanner().Scan();
 
         Log.Debug("Found {Count} block types", rawBlocks.Count);
         Log.Debug("Discovered {ConcreteCount} concrete + {InterfaceCount} interface BlockStore<T> properties",
             concreteStores.Count, interfaceStores.Count);
 
-        var blocks = BuildInitialModel(rawBlocks);
+        List<BlockDefinition> blocks = BuildInitialModel(rawBlocks);
         Log.Debug("Created {Count} block definitions", blocks.Count);
 
         Log.Debug("Running transformation stages...");

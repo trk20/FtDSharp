@@ -22,10 +22,8 @@ namespace FtDSharp
         private Action? _onPhysicsTick;
         private Action? _onStop;
         private IProviderScope? _scope;
-        private string? _hash;
-        private string? _lastError;
-        private static readonly MetadataReference[] DefaultReferences = BuildDefaultReferences();
-        private const string ScriptPrelude =
+        private static readonly MetadataReference[] _defaultReferences = BuildDefaultReferences();
+        private const string _scriptPrelude =
             "global using System;\n" +
             "global using System.Collections.Generic;\n" +
             "global using System.Linq;\n" +
@@ -34,10 +32,10 @@ namespace FtDSharp
             "global using static FtDSharp.Logging;\n" +
             "#line 1\n";
 
-        private static readonly ImmutableArray<DiagnosticAnalyzer> BannedApiAnalyzers =
+        private static readonly ImmutableArray<DiagnosticAnalyzer> _bannedApiAnalyzers =
             ImmutableArray.Create<DiagnosticAnalyzer>(new CSharpSymbolIsBannedAnalyzer());
 
-        private static readonly AnalyzerOptions BannedApiAnalyzerOptions = new(
+        private static readonly AnalyzerOptions _bannedApiAnalyzerOptions = new(
             ImmutableArray.Create<AdditionalText>(new InMemoryAdditionalText("BannedSymbols.txt",
                 // File system & network
                 "N:System.IO;File system access is not allowed.\n" +
@@ -71,13 +69,13 @@ namespace FtDSharp
                 "P:System.Exception.TargetSite;TargetSite exposes reflection and is not allowed.\n")));
 
         public bool Active => _instance != null;
-        public string? CurrentHash => _hash;
+        public string? CurrentHash { get; private set; }
         public TimeSpan LastCompileTime { get; private set; }
-        public string? LastError => _lastError;
+        public string? LastError { get; private set; }
 
         internal (bool Success, Diagnostic[] Diagnostics) Compile(string code, string hash)
         {
-            _lastError = null;
+            LastError = null;
             var diagnosticsList = new List<Diagnostic>();
 
             if (ScriptCompilationCache.TryGet(hash, out _))
@@ -89,12 +87,12 @@ namespace FtDSharp
             {
                 var sw = Stopwatch.StartNew();
 
-                var syntaxTree = CSharpSyntaxTree.ParseText(ScriptPrelude + code);
+                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(_scriptPrelude + code);
 
                 var compilation = CSharpCompilation.Create(
                     assemblyName: $"FtDSharpScript_{Guid.NewGuid():N}",
                     syntaxTrees: new[] { syntaxTree },
-                    references: DefaultReferences,
+                    references: _defaultReferences,
                     options: new CSharpCompilationOptions(
                         OutputKind.DynamicallyLinkedLibrary,
                         optimizationLevel: OptimizationLevel.Release,
@@ -102,14 +100,14 @@ namespace FtDSharp
 
                 if (ContainsDynamicKeyword(syntaxTree))
                 {
-                    _lastError = "Banned API usage:\nDynamic dispatch is not allowed.";
+                    LastError = "Banned API usage:\nDynamic dispatch is not allowed.";
                     return (false, diagnosticsList.ToArray());
                 }
 
-                var validationDiags = RunBannedApiAnalysis(compilation);
+                ImmutableArray<Diagnostic> validationDiags = RunBannedApiAnalysis(compilation);
                 if (validationDiags.Length > 0)
                 {
-                    _lastError = "Banned API usage:\n" + string.Join("\n",
+                    LastError = "Banned API usage:\n" + string.Join("\n",
                         validationDiags.Select(static d => d.GetMessage()));
                     diagnosticsList.AddRange(validationDiags);
                     return (false, diagnosticsList.ToArray());
@@ -120,7 +118,7 @@ namespace FtDSharp
                 if (!emitResult.Success)
                 {
                     diagnosticsList.AddRange(emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
-                    _lastError = string.Join("\n", diagnosticsList.Select(d => d.ToString()));
+                    LastError = string.Join("\n", diagnosticsList.Select(d => d.ToString()));
                     return (false, diagnosticsList.ToArray());
                 }
 
@@ -132,43 +130,43 @@ namespace FtDSharp
             }
             catch (Exception ex)
             {
-                _lastError = $"Error compiling script: {ex.Message}";
+                LastError = $"Error compiling script: {ex.Message}";
                 return (false, diagnosticsList.ToArray());
             }
         }
 
         internal bool Instantiate(string hash, IProviderScope? scope)
         {
-            _lastError = null;
+            LastError = null;
 
-            if (!ScriptCompilationCache.TryGet(hash, out var assembly))
+            if (!ScriptCompilationCache.TryGet(hash, out Assembly? assembly))
             {
-                _lastError = "No compiled assembly found for the given hash. Compile first.";
+                LastError = "No compiled assembly found for the given hash. Compile first.";
                 return false;
             }
 
             try
             {
-                var type = assembly!
+                Type type = assembly!
                     .GetTypes()
                     .FirstOrDefault(HasAttributedEntryPointMethods);
 
                 if (type == null)
                 {
-                    _lastError = "No public class with entry point methods found. Your script must declare at least one method with [OnPhysicsTick], [OnStart], or [OnStop].";
+                    LastError = "No public class with entry point methods found. Your script must declare at least one method with [OnPhysicsTick], [OnStart], or [OnStop].";
                     return false;
                 }
 
                 var validationError = ValidateEntryPointMethods(type);
                 if (validationError != null)
                 {
-                    _lastError = validationError;
+                    LastError = validationError;
                     return false;
                 }
 
-                var tickMethod = FindEntryPointMethod<OnPhysicsTickAttribute>(type);
-                var startMethod = FindEntryPointMethod<OnStartAttribute>(type);
-                var stopMethod = FindEntryPointMethod<OnStopAttribute>(type);
+                MethodInfo? tickMethod = FindEntryPointMethod<OnPhysicsTickAttribute>(type);
+                MethodInfo? startMethod = FindEntryPointMethod<OnStartAttribute>(type);
+                MethodInfo? stopMethod = FindEntryPointMethod<OnStopAttribute>(type);
 
                 using (scope != null ? ScriptContext.Push(scope) : null)
                 {
@@ -178,18 +176,18 @@ namespace FtDSharp
                     CreateEntryPointDelegate(_instance, startMethod)?.Invoke();
                 }
 
-                _hash = hash;
+                CurrentHash = hash;
                 _scope = scope;
                 return true;
             }
             catch (Exception ex)
             {
-                _lastError = $"Error instantiating script: {ex.GetBaseException().Message}";
+                LastError = $"Error instantiating script: {ex.GetBaseException().Message}";
                 _instance = null;
                 _onPhysicsTick = null;
                 _onStop = null;
                 _scope = null;
-                _hash = null;
+                CurrentHash = null;
                 return false;
             }
         }
@@ -198,9 +196,9 @@ namespace FtDSharp
         {
             if (_instance == null) return;
 
-            using var currentScope = ScriptContext.Push(scope);
+            using IDisposable currentScope = ScriptContext.Push(scope);
 
-            var profile = AbstractModule<FtDSharpProfiler>.Instance?.ScriptExecution;
+            BrilliantSkies.Profiling.ProfileTypes.IProfile? profile = AbstractModule<FtDSharpProfiler>.Instance?.ScriptExecution;
             var startTime = profile?.Start() ?? 0;
             try
             {
@@ -225,7 +223,7 @@ namespace FtDSharp
             {
                 if (_onStop != null && _scope != null)
                 {
-                    using var ctx = ScriptContext.Push(_scope);
+                    using IDisposable ctx = ScriptContext.Push(_scope);
                     _onStop.Invoke();
                 }
             }
@@ -246,7 +244,7 @@ namespace FtDSharp
                 _onPhysicsTick = null;
                 _onStop = null;
                 _scope = null;
-                _hash = null;
+                CurrentHash = null;
             }
         }
 
@@ -261,14 +259,14 @@ namespace FtDSharp
         private static ImmutableArray<Diagnostic> RunBannedApiAnalysis(CSharpCompilation compilation)
         {
             var cwaOptions = new CompilationWithAnalyzersOptions(
-                BannedApiAnalyzerOptions,
+                _bannedApiAnalyzerOptions,
                 onAnalyzerException: null,
                 concurrentAnalysis: true,
                 logAnalyzerExecutionTime: false,
                 reportSuppressedDiagnostics: false);
 
-            var cwa = new CompilationWithAnalyzers(compilation, BannedApiAnalyzers, cwaOptions);
-            var diagnostics = cwa.GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
+            var cwa = new CompilationWithAnalyzers(compilation, _bannedApiAnalyzers, cwaOptions);
+            ImmutableArray<Diagnostic> diagnostics = cwa.GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
             return diagnostics.Where(static d => d.Id is "RS0030" or "RS0031").ToImmutableArray();
         }
 
@@ -325,7 +323,7 @@ namespace FtDSharp
                 }
             }
 
-            foreach (var asm in candidates)
+            foreach (Assembly asm in candidates)
             {
                 AddReference(refs, seen, asm.Location);
             }
@@ -351,15 +349,7 @@ namespace FtDSharp
             return refs.ToArray();
         }
 
-        private static bool HasAttributedEntryPointMethods(Type type)
-        {
-            if (!type.IsClass || !type.IsPublic)
-            {
-                return false;
-            }
-
-            return GetAttributedEntryPointMethods(type).Length > 0;
-        }
+        private static bool HasAttributedEntryPointMethods(Type type) => type.IsClass && type.IsPublic && GetAttributedEntryPointMethods(type).Length > 0;
 
         private static MethodInfo? FindEntryPointMethod<TAttribute>(Type type)
             where TAttribute : Attribute
@@ -371,7 +361,7 @@ namespace FtDSharp
 
         private static string? ValidateEntryPointMethods(Type type)
         {
-            foreach (var method in GetAttributedEntryPointMethods(type))
+            foreach (MethodInfo method in GetAttributedEntryPointMethods(type))
             {
                 if (IsValidEntryPointMethod(method))
                 {
@@ -409,12 +399,8 @@ namespace FtDSharp
 
         private static Action? CreateEntryPointDelegate(object instance, MethodInfo? method)
         {
-            if (method == null)
-            {
-                return null;
-            }
-
-            return (Action)Delegate.CreateDelegate(typeof(Action), instance, method);
+            return method == null ? null
+                : (Action)Delegate.CreateDelegate(typeof(Action), instance, method);
         }
     }
 }

@@ -38,15 +38,15 @@ public static class BlockSurfaceRules
     public static void ApplyAll(IReadOnlyList<BlockDefinition> blocks)
     {
         Log.Debug("Computing block render surfaces for {Count} blocks...", blocks.Count);
-        foreach (var block in blocks)
+        foreach (BlockDefinition block in blocks)
             block.SetSurface(Compute(block));
     }
 
     public static BlockRenderSurface Compute(BlockDefinition block)
     {
-        var kind = Classify(block);
-        var inheritedNames = block.GetInheritedPropertyNames();
-        var logicalPropNames = LogicalInterfaces.GetLogicalInterfacePropertyNames(block);
+        BlockKind kind = Classify(block);
+        HashSet<string> inheritedNames = block.GetInheritedPropertyNames();
+        HashSet<string> logicalPropNames = LogicalInterfaces.GetLogicalInterfacePropertyNames(block);
 
         return new BlockRenderSurface
         {

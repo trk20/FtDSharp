@@ -8,7 +8,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        var level = args.Contains("-v") || args.Contains("--verbose")
+        LogEventLevel level = args.Contains("-v") || args.Contains("--verbose")
             ? LogEventLevel.Debug
             : LogEventLevel.Information;
 

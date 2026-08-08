@@ -21,9 +21,9 @@ public class BlockScanner
             .OrderBy(t => t.Name)
             .ToList();
 
-        foreach (var blockType in blockTypes)
+        foreach (Type? blockType in blockTypes)
         {
-            var properties = DiscoverRawProperties(blockType);
+            List<RawPropertyInfo> properties = DiscoverRawProperties(blockType);
             if (properties.Count == 0)
                 continue;
 
@@ -41,9 +41,9 @@ public class BlockScanner
     {
         var properties = new List<RawPropertyInfo>();
 
-        foreach (var prop in blockType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (PropertyInfo prop in blockType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            var readable = prop.GetCustomAttribute<ReadableAttribute>();
+            ReadableAttribute? readable = prop.GetCustomAttribute<ReadableAttribute>();
             if (readable == null) continue;
             if (prop.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
             if (!IsSupportedType(prop.PropertyType)) continue;
@@ -67,13 +67,13 @@ public class BlockScanner
             .Where(p => typeof(DataPackage).IsAssignableFrom(p.PropertyType))
             .ToList();
 
-        foreach (var dpProp in dataPackageProps)
+        foreach (PropertyInfo? dpProp in dataPackageProps)
         {
             if (Overrides.SkipDataPackages.Contains(dpProp.Name)) continue;
 
-            foreach (var innerProp in dpProp.PropertyType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            foreach (PropertyInfo innerProp in dpProp.PropertyType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
-                var rawPropInfo = DiscoverDataPackageProperty(dpProp, innerProp);
+                RawPropertyInfo? rawPropInfo = DiscoverDataPackageProperty(dpProp, innerProp);
                 if (rawPropInfo != null)
                     properties.Add(rawPropInfo);
             }
@@ -84,8 +84,8 @@ public class BlockScanner
 
     private RawPropertyInfo? DiscoverDataPackageProperty(PropertyInfo dpProp, PropertyInfo innerProp)
     {
-        var readable = innerProp.GetCustomAttribute<ReadableAttribute>();
-        var variable = innerProp.GetCustomAttribute<VariableAttribute>()
+        ReadableAttribute? readable = innerProp.GetCustomAttribute<ReadableAttribute>();
+        VariableAttribute? variable = innerProp.GetCustomAttribute<VariableAttribute>()
             ?? innerProp.GetCustomAttribute<LocalVariableScrapedAttribute>();
 
         var allAttrs = innerProp.GetCustomAttributes().ToList();
@@ -97,8 +97,8 @@ public class BlockScanner
         var fullPropName = $"{dpProp.Name}_{innerProp.Name}";
         if (Overrides.SkipPatternProperties.Any(fullPropName.Contains)) return null;
 
-        var propType = innerProp.PropertyType;
-        var usProp = propType.GetProperty("Us", BindingFlags.Instance | BindingFlags.Public);
+        Type propType = innerProp.PropertyType;
+        PropertyInfo? usProp = propType.GetProperty("Us", BindingFlags.Instance | BindingFlags.Public);
 
         Type? varUnderlyingType = null;
         bool varUsHasSetter = false;

@@ -18,9 +18,9 @@ namespace FtDSharp
 
         private static void Postfix()
         {
-            var container = Configured.i.Get<ModificationComponentContainerItem>();
-            var luaBoxItems = container.FindAllItemsCorrespondingToClassName("LuaBox");
-            foreach (var item in luaBoxItems)
+            ModificationComponentContainerItem container = Configured.i.Get<ModificationComponentContainerItem>();
+            System.Collections.Generic.List<BrilliantSkies.Modding.Types.ItemDefinition> luaBoxItems = container.FindAllItemsCorrespondingToClassName("LuaBox");
+            foreach (BrilliantSkies.Modding.Types.ItemDefinition item in luaBoxItems)
             {
                 item.DisplayName.ScrapableEnglish = NewName;
                 item.InventoryNameOverride.ScrapableEnglish = NewName;

@@ -8,23 +8,23 @@ public class MissilePartsDemo
     public void Update()
     {
         ClearLogs();
-        var target = AI.HighestPriorityMainframe.PrimaryTarget;
+        ITarget? target = AI.HighestPriorityMainframe.PrimaryTarget;
         if (target == null)
         {
             Log("No target");
             return;
         }
 
-        foreach (var missileController in Weapons.MissileControllers)
+        foreach (IMissileController missileController in Weapons.MissileControllers)
         {
             missileController.Fire();
         }
-        foreach (var missile in Guidance.Missiles)
+        foreach (IMissile missile in Guidance.Missiles)
         {
             missile.AimAt(target.Position);
 
             // Control propulsion visual effects based on distance
-            float distanceToTarget = Vector3.Distance(missile.Position, target.Position);
+            var distanceToTarget = Vector3.Distance(missile.Position, target.Position);
 
             // Color flame and trail based on distance (green when close, red when far)
             var color = Color.Lerp(Color.green, Color.red, Mathf.InverseLerp(0, 1000, distanceToTarget));
@@ -33,13 +33,13 @@ public class MissilePartsDemo
             missile.EngineLight.Color = color;
 
             // Log thrust from variable thruster if present
-            foreach (var thruster in missile.GetParts<IVariableThruster>())
+            foreach (IVariableThruster thruster in missile.GetParts<IVariableThruster>())
             {
                 Log($"  Thruster: {thruster.Thrust}, Distance: {distanceToTarget:F0}m");
             }
 
             // Log ballast tank depth if present (for torpedoes)
-            foreach (var ballast in missile.GetParts<IBallastTank>())
+            foreach (IBallastTank ballast in missile.GetParts<IBallastTank>())
             {
                 Log($"  Ballast: FloatHeight={ballast.FloatHeightDecrease}, Buoyancy={ballast.BuoyancyModifier}");
             }

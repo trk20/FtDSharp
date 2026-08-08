@@ -78,7 +78,7 @@ namespace FtDSharp
 
         private static IReadOnlyList<T> GetByInterface<T>() where T : class, IWeapon
         {
-            var all = All;
+            IReadOnlyList<IWeapon> all = All;
             if (!ReferenceEquals(all, _lastAll))
             {
                 _lastAll = all;
@@ -86,7 +86,7 @@ namespace FtDSharp
                 _interfaceCache.Clear();
             }
 
-            var key = typeof(T);
+            Type key = typeof(T);
             if (_interfaceCache.TryGetValue(key, out var cached))
                 return (IReadOnlyList<T>)cached;
 

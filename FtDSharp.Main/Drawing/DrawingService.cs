@@ -33,7 +33,7 @@ namespace FtDSharp
         {
             lock (_lock)
             {
-                if (!_buckets.TryGetValue(owner, out var figures))
+                if (!_buckets.TryGetValue(owner, out List<IDrawFigure>? figures))
                 {
                     figures = new List<IDrawFigure>();
                     _buckets[owner] = figures;
@@ -47,7 +47,7 @@ namespace FtDSharp
         {
             lock (_lock)
             {
-                if (_buckets.TryGetValue(owner, out var figures))
+                if (_buckets.TryGetValue(owner, out List<IDrawFigure>? figures))
                 {
                     figures.Clear();
                 }
@@ -66,9 +66,9 @@ namespace FtDSharp
         {
             lock (_lock)
             {
-                foreach (var figures in _buckets.Values)
+                foreach (List<IDrawFigure> figures in _buckets.Values)
                 {
-                    foreach (var figure in figures)
+                    foreach (IDrawFigure figure in figures)
                     {
                         figure.DrawFigure();
                     }
@@ -84,7 +84,7 @@ namespace FtDSharp
 
             lock (_lock)
             {
-                foreach (var figures in _buckets.Values)
+                foreach (List<IDrawFigure> figures in _buckets.Values)
                 {
                     for (int i = figures.Count - 1; i >= 0; i--)
                     {

@@ -39,7 +39,7 @@ namespace FtDSharp.Facades
 
         private IFleet GetFleet()
         {
-            var force = _construct.GetForce();
+            Force force = _construct.GetForce();
             return new FleetFacade(force.Fleet);
         }
     }

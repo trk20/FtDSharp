@@ -18,12 +18,12 @@ public class BlockListCacheTests
             Items = { 1, 2, 3 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var value = cache.Value;
+        IReadOnlyList<int> value = cache.Value;
 
         Assert.Equal(1, state.PopulateCalls);
-        Assert.Equal(new[] { 1, 2, 3 }, value);
+        Assert.Equal([1, 2, 3], value);
     }
 
     [Fact]
@@ -36,14 +36,14 @@ public class BlockListCacheTests
             Items = { 4, 5 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
-        var second = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Equal(1, state.PopulateCalls);
         Assert.Same(first, second);
-        Assert.Equal(new[] { 4, 5 }, second);
+        Assert.Equal([4, 5], second);
     }
 
     [Fact]
@@ -56,19 +56,19 @@ public class BlockListCacheTests
             Items = { 1, 2 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
 
         state.Count = 3;
         state.Items.Clear();
-        state.Items.AddRange(new[] { 7, 8, 9 });
+        state.Items.AddRange([7, 8, 9]);
 
-        var second = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Equal(2, state.PopulateCalls);
         Assert.Same(first, second);
-        Assert.Equal(new[] { 7, 8, 9 }, second);
+        Assert.Equal([7, 8, 9], second);
     }
 
     [Fact]
@@ -81,19 +81,19 @@ public class BlockListCacheTests
             Items = { 10 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
 
         state.Owner = new object();
         state.Items.Clear();
         state.Items.Add(20);
 
-        var second = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Equal(2, state.PopulateCalls);
         Assert.Same(first, second);
-        Assert.Equal(new[] { 20 }, second);
+        Assert.Equal([20], second);
     }
 
     [Fact]
@@ -106,10 +106,10 @@ public class BlockListCacheTests
             Items = { 1, 2, 3 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
-        var second = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Empty(first);
         Assert.Same(Array.Empty<int>(), first);
@@ -127,10 +127,10 @@ public class BlockListCacheTests
             Items = { 1, 2 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
-        var second = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Empty(first);
         Assert.Same(Array.Empty<int>(), first);
@@ -148,26 +148,26 @@ public class BlockListCacheTests
             Items = { 1, 2 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var initial = cache.Value;
+        IReadOnlyList<int> initial = cache.Value;
         var initialSnapshot = initial.ToArray();
 
         state.Owner = null;
-        var empty = cache.Value;
+        IReadOnlyList<int> empty = cache.Value;
 
         state.Owner = new object();
         state.Items.Clear();
-        state.Items.AddRange(new[] { 8, 9 });
+        state.Items.AddRange([8, 9]);
 
-        var repopulated = cache.Value;
+        IReadOnlyList<int> repopulated = cache.Value;
 
         Assert.Equal(2, state.PopulateCalls);
-    Assert.Equal(new[] { 1, 2 }, initialSnapshot);
+        Assert.Equal([1, 2], initialSnapshot);
         Assert.Empty(empty);
         Assert.Same(Array.Empty<int>(), empty);
         Assert.Same(initial, repopulated);
-        Assert.Equal(new[] { 8, 9 }, repopulated);
+        Assert.Equal([8, 9], repopulated);
     }
 
     [Fact]
@@ -180,19 +180,19 @@ public class BlockListCacheTests
             Items = { 3, 4 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
 
         state.Items.Clear();
-        state.Items.AddRange(new[] { 30, 40 });
+        state.Items.AddRange([30, 40]);
         cache.Invalidate();
 
-        var second = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Equal(2, state.PopulateCalls);
         Assert.Same(first, second);
-        Assert.Equal(new[] { 30, 40 }, second);
+        Assert.Equal([30, 40], second);
     }
 
     [Fact]
@@ -205,19 +205,19 @@ public class BlockListCacheTests
             Items = { 5 }
         };
 
-        var cache = state.CreateCache();
+        BlockListCache<int> cache = state.CreateCache();
 
-        var first = cache.Value;
+        IReadOnlyList<int> first = cache.Value;
 
         state.Items.Clear();
         state.Items.Add(6);
         cache.Invalidate();
 
-        var second = cache.Value;
+        IReadOnlyList<int> second = cache.Value;
 
         Assert.Equal(2, state.PopulateCalls);
         Assert.Same(first, second);
-        Assert.Equal(new[] { 6 }, second);
+        Assert.Equal([6], second);
     }
 
     private sealed class CacheState<T>

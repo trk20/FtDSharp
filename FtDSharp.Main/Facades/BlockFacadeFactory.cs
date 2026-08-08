@@ -28,7 +28,7 @@ namespace FtDSharp.Facades
             // Don't cache facades for deleted blocks
             if (block.IsDeleted) return factory();
 
-            var key = (block.Name, block.IdSet.Id.Us);
+            (string Name, int Us) key = (block.Name, block.IdSet.Id.Us);
 
             if (cache.TryGetValue(key, out var cached))
             {
@@ -36,14 +36,14 @@ namespace FtDSharp.Facades
                 if (cached is BlockFacadeBase facade && facade.Block.IsDeleted)
                 {
                     cache.Remove(key);
-                    var newFacade = factory();
+                    TFacade newFacade = factory();
                     cache[key] = newFacade;
                     return newFacade;
                 }
                 return (cached as TFacade)!;
             }
 
-            var createdFacade = factory();
+            TFacade createdFacade = factory();
             cache[key] = createdFacade;
             return createdFacade;
         }
@@ -73,7 +73,7 @@ namespace FtDSharp.Facades
             return FacadeCache.GetOrCreate<WeaponFacade>(weapon, () =>
             {
                 // BlockFactory.Wrap returns the most derived facade type
-                var facade = BlockFactory.Wrap(weapon);
+                IBlock? facade = BlockFactory.Wrap(weapon);
                 if (facade is WeaponFacade weaponFacade)
                     return weaponFacade;
 
@@ -97,7 +97,7 @@ namespace FtDSharp.Facades
             return FacadeCache.GetOrCreate<TurretFacade>(turret, () =>
             {
                 // BlockFactory.Wrap returns the most derived facade type
-                var facade = BlockFactory.Wrap(turret);
+                IBlock? facade = BlockFactory.Wrap(turret);
                 if (facade is TurretFacade turretFacade)
                     return turretFacade;
 

@@ -26,7 +26,7 @@ public class ConstructSwitchTests
         var secondScope = new TestProviderScope();
         secondScope.GameProvider.GameTime = 2.0f;
 
-        var host = ScriptTestHelper.CompileAndInstantiate(code, firstScope);
+        ScriptHost host = ScriptTestHelper.CompileAndInstantiate(code, firstScope);
 
         host.Tick(firstScope);
         host.Tick(secondScope);

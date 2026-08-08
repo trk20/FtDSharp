@@ -73,7 +73,7 @@ public static class MissileTemplateModels
     private static int GetInheritanceDepth(Type type)
     {
         int depth = 0;
-        var current = type;
+        Type current = type;
         while (current.BaseType != null)
         {
             depth++;

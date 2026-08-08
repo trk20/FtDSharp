@@ -5,23 +5,23 @@
 /// </summary>
 public class SubTurretDemo
 {
-    IWeaponController? subTurretController;
-    IWeaponController? rootTurretController;
+    private IWeaponController? _subTurretController;
+    private IWeaponController? _rootTurretController;
 
     [OnStart]
     public void Initialize()
     {
-        var subTurret = Weapons.Turrets.FirstOrDefault(t => t.CustomName == "sub");
+        ITurret subTurret = Weapons.Turrets.FirstOrDefault(t => t.CustomName == "sub");
         if (subTurret == null)
         {
             LogError("No turret named 'sub' found. Set CustomName to 'sub' on a turret.");
             return;
         }
-        subTurretController = Weapons.CreateController(subTurret);
+        _subTurretController = Weapons.CreateController(subTurret);
 
-        var rootWeapons = Weapons.Turrets.Concat(Weapons.All).Except(subTurretController.Controlled.All).ToList();
+        var rootWeapons = Weapons.Turrets.Concat(Weapons.All).Except(_subTurretController.Controlled.All).ToList();
         if (rootWeapons.Count > 0)
-            rootTurretController = Weapons.CreateController(rootWeapons);
+            _rootTurretController = Weapons.CreateController(rootWeapons);
     }
 
     [OnPhysicsTick]
@@ -29,29 +29,29 @@ public class SubTurretDemo
     {
         ClearLogs();
 
-        var mainframe = AI.HighestPriorityMainframe;
+        IMainframe mainframe = AI.HighestPriorityMainframe;
 
-        if (subTurretController == null && rootTurretController == null)
+        if (_subTurretController == null && _rootTurretController == null)
         {
             Log("No turrets available for control.");
             return;
         }
 
-        if (subTurretController != null && rootTurretController != null)
+        if (_subTurretController != null && _rootTurretController != null)
         {
-            Log($"Subturret controlling {subTurretController.Controlled.Weapons.Count} weapons.");
-            Log($"Root turret controlling {rootTurretController.Controlled.Weapons.Count} weapons.");
-            foreach (var w in subTurretController.Controlled.Weapons)
+            Log($"Subturret controlling {_subTurretController.Controlled.Weapons.Count} weapons.");
+            Log($"Root turret controlling {_rootTurretController.Controlled.Weapons.Count} weapons.");
+            foreach (IWeapon w in _subTurretController.Controlled.Weapons)
             {
-                Drawing.Line(w.WorldPosition, w.WorldPosition + w.AimDirection * 10f, Color.blue);
+                Drawing.Line(w.WorldPosition, w.WorldPosition + (w.AimDirection * 10f), Color.blue);
             }
 
-            foreach (var w in rootTurretController.Controlled.Weapons)
+            foreach (IWeapon w in _rootTurretController.Controlled.Weapons)
             {
-                Drawing.Line(w.WorldPosition, w.WorldPosition + w.AimDirection * 10f, Color.green);
+                Drawing.Line(w.WorldPosition, w.WorldPosition + (w.AimDirection * 10f), Color.green);
             }
         }
-        var target = mainframe.PrimaryTarget;
+        ITarget? target = mainframe.PrimaryTarget;
         if (target == null)
         {
             Log("No target found");
@@ -63,17 +63,17 @@ public class SubTurretDemo
         // Draw target position
         Drawing.Sphere(target.Position, radius: 5f, Color.red);
 
-        var rootTrack = rootTurretController?.Track(target);
+        TrackResult? rootTrack = _rootTurretController?.Track(target);
 
-        var subTrack = subTurretController?.Track(target);
+        TrackResult? subTrack = _subTurretController?.Track(target);
 
         if (subTrack?.CanFire ?? false)
         {
-            subTurretController!.Fire();
+            _subTurretController!.Fire();
         }
         if (rootTrack?.CanFire ?? false)
         {
-            rootTurretController!.Fire();
+            _rootTurretController!.Fire();
         }
     }
 }

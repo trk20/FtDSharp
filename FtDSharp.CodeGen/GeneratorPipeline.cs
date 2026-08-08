@@ -15,10 +15,10 @@ public class GeneratorPipeline
         GeneratedOutputWriter.CleanGeneratedFiles(apiOutputPath);
         GeneratedOutputWriter.CleanGeneratedFiles(facadeOutputPath);
 
-        var blocks = BlockPipeline.Run();
+        List<Models.BlockDefinition> blocks = BlockPipeline.Run();
 
         var referencedAsParent = new HashSet<Type>();
-        foreach (var block in blocks)
+        foreach (Models.BlockDefinition block in blocks)
         {
             if (block.Parent != null)
                 referencedAsParent.Add(block.Parent.GameType);
@@ -41,7 +41,7 @@ public class GeneratorPipeline
             renderer.RenderLogicalInterfaces([.. LogicalInterfaces.Definitions], blocksToGenerate));
 
         int totalProperties = 0;
-        foreach (var block in blocksToGenerate)
+        foreach (Models.BlockDefinition? block in blocksToGenerate)
         {
             totalProperties += block.Surface.InterfaceProperties.Count;
 
@@ -93,7 +93,7 @@ public class GeneratorPipeline
 
         int partCount = 0;
         int paramCount = 0;
-        foreach (var part in partsToGenerate)
+        foreach (MissilePartDefinition? part in partsToGenerate)
         {
             partCount++;
             paramCount += part.Parameters.Count;

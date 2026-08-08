@@ -8,7 +8,7 @@ public static class LogicalInterfacePass
     public static void Run(IReadOnlyList<BlockDefinition> blocks)
     {
         Log.Debug("Determining interface implementations for {Count} blocks...", blocks.Count);
-        foreach (var block in blocks)
+        foreach (BlockDefinition block in blocks)
             DetermineLogicalInterfaces(block);
     }
 
@@ -17,7 +17,7 @@ public static class LogicalInterfacePass
         var allPropNames = new HashSet<string>(block.AllProperties.Select(p => p.Name));
         var directInterfaces = new List<string>();
 
-        foreach (var logicalDef in LogicalInterfaces.Definitions)
+        foreach (LogicalInterfaceDefinition logicalDef in LogicalInterfaces.Definitions)
         {
             var matchCount = logicalDef.PropertyNames.Count(allPropNames.Contains);
             if (matchCount != logicalDef.PropertyNames.Length)

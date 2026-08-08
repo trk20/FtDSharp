@@ -21,11 +21,11 @@ namespace FtDSharp
         {
             var harmony = new Harmony("FtDSharp.PrePatch");
 
-            var original = typeof(Mirror).GetMethod(
+            MethodInfo original = typeof(Mirror).GetMethod(
                 nameof(Mirror.GetAllOfInterface),
                 new[] { typeof(Type) });
 
-            var prefix = typeof(MirrorPatch).GetMethod(
+            MethodInfo prefix = typeof(MirrorPatch).GetMethod(
                 nameof(MirrorPatch.Prefix_GetAllOfInterface),
                 BindingFlags.Static | BindingFlags.Public);
 

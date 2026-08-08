@@ -179,13 +179,13 @@ namespace FtDSharp
 
         private IReadOnlyList<IFriendlyConstruct> GetAll()
         {
-            var construct = _context.RawAllConstruct;
+            AllConstruct? construct = _context.RawAllConstruct;
             if (construct == null)
             {
                 return Array.Empty<IFriendlyConstruct>();
             }
 
-            var myTeam = construct.GetTeam();
+            BrilliantSkies.Core.Id.ObjectId myTeam = construct.GetTeam();
             return StaticConstructablesManager.Constructables
                 .Where(c => c != null && !c.Destroyed && c.GetTeam() == myTeam)
                 .Select(c => new FriendlyConstructFacade(c))
@@ -195,13 +195,13 @@ namespace FtDSharp
 
         private IReadOnlyList<IFriendlyConstruct> GetAllExcludingSelf()
         {
-            var construct = _context.RawAllConstruct;
+            AllConstruct? construct = _context.RawAllConstruct;
             if (construct == null)
             {
                 return Array.Empty<IFriendlyConstruct>();
             }
 
-            var myTeam = construct.GetTeam();
+            BrilliantSkies.Core.Id.ObjectId myTeam = construct.GetTeam();
             return StaticConstructablesManager.Constructables
                 .Where(c => c != null && !c.Destroyed && c != construct && c.GetTeam() == myTeam)
                 .Select(c => new FriendlyConstructFacade(c))

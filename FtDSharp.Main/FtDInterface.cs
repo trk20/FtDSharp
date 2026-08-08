@@ -7,54 +7,56 @@ using HarmonyLib;
 
 namespace FtDSharp
 {
-	public class FtDInterface : GamePlugin_PostLoad
-	{
+    public class FtDInterface : GamePlugin_PostLoad
+    {
 
-		public string name => "FtDSharp";
+        public string name => "FtDSharp";
 
-		public Version version => new(0, 4, 0);
+        public Version version => new(0, 4, 0);
 
-		public void OnLoad()
-		{
-			new Harmony("FtDSharp").PatchAll();
-			ModInfo.ModVersion = version;
-			ModInfo.OnLoad();
+        public void OnLoad()
+        {
+            new Harmony("FtDSharp").PatchAll();
 
-			Entry.AddModule(AbstractModule<FtDSharpProfiler>.Instance);
+            ModInfo.ModVersion = version;
 
-			ScriptCompilationCache.Warmup();
-		}
+            ModInfo.OnLoad();
 
-		public bool AfterAllPluginsLoaded() => true;
+            Entry.AddModule(AbstractModule<FtDSharpProfiler>.Instance);
 
-		public void OnSave() { }
+            ScriptCompilationCache.Warmup();
+        }
 
-	}
+        public bool AfterAllPluginsLoaded() => true;
 
-	public static class ModInfo
-	{
-		public static readonly string ModName, ModPath;
-		public static Version? ModVersion;
+        public void OnSave() { }
 
-		static ModInfo()
-		{
-			ModPath = Assembly.GetExecutingAssembly().Location;
-			ModName = Path.GetDirectoryName(ModPath);
+    }
 
-			while (Path.GetFileName(ModName) != "Mods")
-			{
-				ModPath = ModName;
-				ModName = Path.GetDirectoryName(ModPath);
-			}
+    public static class ModInfo
+    {
+        public static readonly string ModName, ModPath;
+        public static Version? ModVersion;
 
-			ModName = Path.GetFileName(ModPath);
-		}
+        static ModInfo()
+        {
+            ModPath = Assembly.GetExecutingAssembly().Location;
+            ModName = Path.GetDirectoryName(ModPath);
 
-		public static void OnLoad()
-		{
-			ModProblems.AddModProblem($"{ModName} v{ModVersion} active!", ModPath, string.Empty, false);
-		}
-	}
+            while (Path.GetFileName(ModName) != "Mods")
+            {
+                ModPath = ModName;
+                ModName = Path.GetDirectoryName(ModPath);
+            }
+
+            ModName = Path.GetFileName(ModPath);
+        }
+
+        public static void OnLoad()
+        {
+            ModProblems.AddModProblem($"{ModName} v{ModVersion} active!", ModPath, string.Empty, false);
+        }
+    }
 
 
 }

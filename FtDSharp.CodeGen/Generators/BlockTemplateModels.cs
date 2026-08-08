@@ -47,9 +47,9 @@ public static class BlockTemplateModels
     {
         var interfaces = new List<LogicalInterfaceTemplateModel>();
 
-        foreach (var def in definitions)
+        foreach (LogicalInterfaceDefinition def in definitions)
         {
-            var sampleBlock = blocks.FirstOrDefault(b => b.ImplementedLogicalInterfaces.Contains(def.InterfaceName));
+            BlockDefinition? sampleBlock = blocks.FirstOrDefault(b => b.ImplementedLogicalInterfaces.Contains(def.InterfaceName));
             if (sampleBlock == null)
                 continue;
 

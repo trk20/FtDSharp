@@ -12,14 +12,14 @@ public static class PropertyFlattenerPass
         Log.Debug("Processing raw properties for {Count} blocks...", rawBlocks.Count);
         var blocksByType = blocks.ToDictionary(b => b.GameType, b => b);
 
-        foreach (var rawBlock in rawBlocks)
+        foreach (RawBlockInfo rawBlock in rawBlocks)
         {
-            if (!blocksByType.TryGetValue(rawBlock.GameType, out var block))
+            if (!blocksByType.TryGetValue(rawBlock.GameType, out BlockDefinition? block))
                 continue;
 
-            foreach (var rawProp in rawBlock.Properties)
+            foreach (RawPropertyInfo rawProp in rawBlock.Properties)
             {
-                var propDef = ConvertToPropertyDefinition(rawProp, rawBlock.GameType);
+                PropertyDefinition? propDef = ConvertToPropertyDefinition(rawProp, rawBlock.GameType);
                 if (propDef != null)
                     block.AllProperties.Add(propDef);
             }
@@ -32,7 +32,7 @@ public static class PropertyFlattenerPass
             raw.HasUserEditable &&
             (raw.VarUnderlyingType == null || raw.VarUsHasSetter);
 
-        var resolvedType = raw.ResolvedPropertyType;
+        Type resolvedType = raw.ResolvedPropertyType;
 
         return new PropertyDefinition
         {

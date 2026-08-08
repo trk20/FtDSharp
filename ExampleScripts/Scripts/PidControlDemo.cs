@@ -10,19 +10,19 @@
 /// </summary>
 public class PIDControlDemo
 {
-    private const float TargetAltitude = 200f;
+    private const float _targetAltitude = 200f;
 
     private readonly PID _altitudePid;
     private readonly PID _pitchPid;
     private readonly PID _rollPid;
 
     // use constructors to initialize readonly fields - will run before [OnStart] 
-    public PIDControlDemo() 
+    public PIDControlDemo()
     {
         _altitudePid = PID.Bind(
             input: () => Game.MainConstruct.Position.y,
             output: v => Game.MainConstruct.Propulsion.Hover = v,
-            setpoint: () => TargetAltitude,
+            setpoint: () => _targetAltitude,
             kP: 0.1f,
             kI: 0.02f,
             kD: 0.5f,
@@ -52,8 +52,8 @@ public class PIDControlDemo
         _pitchPid.Update(Game.GameDeltaTime);
         _rollPid.Update(Game.GameDeltaTime);
 
-        var construct = Game.MainConstruct;
-        Log($"Altitude: {construct.Position.y:F1}m (target: {TargetAltitude}m, error: {_altitudePid.LastError:F1})");
+        IMainConstruct construct = Game.MainConstruct;
+        Log($"Altitude: {construct.Position.y:F1}m (target: {_targetAltitude}m, error: {_altitudePid.LastError:F1})");
         Log($"Hover output: {_altitudePid.LastOutput:F3} | Integral: {_altitudePid.Integral:F3}");
         Log($"Pitch: {construct.Pitch:F1}° | Roll: {construct.Roll:F1}°");
     }

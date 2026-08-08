@@ -61,11 +61,11 @@ namespace FtDSharp.Facades
                     if (_baseBlock == null) return null;
 
                     // Check if this block is part of a subconstruct
-                    var subConstruct = _baseBlock.SubConstruct;
+                    ISubConstructBlock? subConstruct = _baseBlock.SubConstruct;
                     if (subConstruct != null)
                     {
                         // Get the block that owns this subconstruct (e.g., turret, spinblock)
-                        var activeBlock = subConstruct.ActiveBlock;
+                        Block? activeBlock = subConstruct.ActiveBlock;
                         if (activeBlock == _baseBlock)
                         {
                             var subConstruct2 = subConstruct.Parent as SubConstruct;
@@ -125,7 +125,7 @@ namespace FtDSharp.Facades
             get
             {
                 int depth = 0;
-                var current = Parent;
+                IBlock? current = Parent;
                 while (current != null)
                 {
                     depth++;

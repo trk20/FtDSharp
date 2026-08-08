@@ -43,7 +43,7 @@ namespace FtDSharp
         [HarmonyPatch(typeof(LuaBox), nameof(LuaBox.BlockStart))]
         private static void LuaBox_BlockStart_Postfix(LuaBox __instance)
         {
-            var runtime = GetRuntime(__instance);
+            LuaRuntimeState runtime = GetRuntime(__instance);
             __instance.binding = new LuaBinding((__instance.MainConstruct as MainConstruct)!);
             runtime.Attach(__instance);
             runtime.EnsureCompiled(__instance);
@@ -61,7 +61,7 @@ namespace FtDSharp
         [HarmonyPatch(typeof(LuaBox), "SetLuaCode")] // private method
         private static bool LuaBox_SetLuaCode_Prefix(LuaBox __instance)
         {
-            var runtime = GetRuntime(__instance);
+            LuaRuntimeState runtime = GetRuntime(__instance);
             runtime.Attach(__instance);
             __instance.Running = runtime.EnsureCompiled(__instance); // note: lags first time - maybe precompile default script
             return false;
@@ -77,7 +77,7 @@ namespace FtDSharp
                 return false;
             }
 
-            if (RuntimeTable.TryGetValue(__instance, out var runtime))
+            if (RuntimeTable.TryGetValue(__instance, out LuaRuntimeState? runtime))
             {
                 runtime.Tick(__instance);
                 __instance.Running = runtime.IsActive;
@@ -163,7 +163,7 @@ namespace FtDSharp
                 _cachedSource = code;
                 _cachedHash = hash;
 
-                var (compiled, diagnostics) = _host.Compile(code, hash);
+                (bool compiled, Diagnostic[] diagnostics) = _host.Compile(code, hash);
                 if (!compiled)
                 {
                     ReportDiagnostics(diagnostics, _host.LastError);
@@ -227,7 +227,7 @@ namespace FtDSharp
                     return;
                 }
 
-                foreach (var diagnostic in diagnostics)
+                foreach (Diagnostic diagnostic in diagnostics)
                 {
                     _context.Log.Error(diagnostic.ToString());
                 }

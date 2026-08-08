@@ -2,13 +2,19 @@ namespace FtDSharp.Facades
 {
     internal partial class MissileControlFacade : IMissileController
     {
-        public override bool CanFire => IsReady;
+        public override bool CanFire =>
+            IsReady && WeaponControlAuthority.AllowsFire(Weapon, FireOptions.Default);
 
-        public override bool Fire()
+        public override bool Fire() => Fire(FireOptions.Default);
+
+        public override bool Fire(FireOptions options)
         {
+            if (!WeaponControlAuthority.AllowsFire(Weapon, options))
+                return false;
+
             UnityEngine.Vector3 forward = Weapon.GameWorldRotation * UnityEngine.Vector3.forward;
             SetAimState(AimAtDirectionInternal(forward));
-            return FireInternal();
+            return FireInternal(options);
         }
 
         public int LoadedMissileCount

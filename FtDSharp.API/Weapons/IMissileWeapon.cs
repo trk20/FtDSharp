@@ -1,20 +1,19 @@
-namespace FtDSharp
+namespace FtDSharp;
+
+/// <summary>
+/// Interface for missile controllers.
+/// </summary>
+public interface IMissileController : IWeapon
 {
-    /// <summary>
-    /// Interface for missile controllers.
-    /// </summary>
-    public interface IMissileController : IWeapon
-    {
-        /// <summary>Number of loaded (ready to launch) missiles across all tubes.</summary>
-        int LoadedMissileCount { get; }
+    /// <summary>Number of loaded (ready to launch) missiles across all tubes.</summary>
+    int LoadedMissileCount { get; }
 
-        /// <summary>Total number of missile tubes across all launchpads.</summary>
-        int TotalTubeCount { get; }
+    /// <summary>Total number of missile tubes across all launchpads.</summary>
+    int TotalTubeCount { get; }
 
-        /// <summary>Current firing mode. Can be changed at runtime.</summary>
-        FiringMode FiringMode { get; set; }
+    /// <summary>Current firing mode. Can be changed at runtime.</summary>
+    FiringMode FiringMode { get; set; }
 
-        /// <summary>Game time of the last missile launch.</summary>
-        float LastFireTime { get; }
-    }
+    /// <summary>Game time of the last missile launch.</summary>
+    float LastFireTime { get; }
 }

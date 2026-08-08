@@ -45,39 +45,46 @@ namespace FtDSharp.Facades
             var allConstruct = _construct as AllConstruct;
             if (allConstruct == null) yield break;
 
-            // Get weapons from main construct
+            var seen = new HashSet<ConstructableWeapon>();
+
             List<ConstructableWeapon>? mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
             if (mainWeapons != null)
             {
                 foreach (ConstructableWeapon weapon in mainWeapons)
                 {
-                    if (weapon != null && weapon.IsAlive)
-                    {
-                        yield return BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, allConstruct);
-                    }
+                    if (weapon == null || !weapon.IsAlive || !seen.Add(weapon))
+                        continue;
+                    yield return BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, allConstruct);
                 }
             }
 
-            // Get weapons from all subconstructs
             List<SubConstruct>? subConstructs = allConstruct.AllBasicsRestricted?.AllSubconstructsBelowUs;
-            if (subConstructs != null)
+            if (subConstructs == null)
+                yield break;
+
+            foreach (SubConstruct subConstruct in subConstructs)
             {
-                foreach (SubConstruct subConstruct in subConstructs)
+                if (subConstruct is not AllConstruct subAll)
+                    continue;
+
+                // Turret/spin ActiveBlocks are the mount; always include them even if missing from
+                // WeaponryRestricted (turrets normally register on ParentConstruct instead).
+                if (subConstruct.ActiveBlock is ConstructableWeapon activeWeapon
+                    && activeWeapon.IsAlive
+                    && seen.Add(activeWeapon))
                 {
-                    if (subConstruct is AllConstruct subAll)
-                    {
-                        List<ConstructableWeapon>? subWeapons = subAll.WeaponryRestricted?.Weapons;
-                        if (subWeapons != null)
-                        {
-                            foreach (ConstructableWeapon weapon in subWeapons)
-                            {
-                                if (weapon != null && weapon.IsAlive)
-                                {
-                                    yield return BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, subAll);
-                                }
-                            }
-                        }
-                    }
+                    yield return BlockFacadeFactory.GetOrCreateWeaponFacade(activeWeapon, subAll);
+                }
+
+                List<ConstructableWeapon>? subWeapons = subAll.WeaponryRestricted?.Weapons;
+                if (subWeapons == null)
+                    continue;
+
+                foreach (ConstructableWeapon weapon in subWeapons)
+                {
+                    if (weapon == null || !weapon.IsAlive || !seen.Add(weapon))
+                        continue;
+                    yield return BlockFacadeFactory.GetOrCreateWeaponFacade(weapon, subAll);
                 }
             }
         }
@@ -86,54 +93,17 @@ namespace FtDSharp.Facades
         {
             return GetAllWeaponFacades()
                 .Where(w => w.WeaponType != WeaponType.Turret)
+                .Where(w => WeaponControlAuthority.HasControllingLwc(w.Weapon))
                 .Cast<IWeapon>()
                 .ToList();
         }
 
         private IReadOnlyList<ITurret> GetTurrets()
         {
-            var allConstruct = _construct as AllConstruct;
-            if (allConstruct == null) return new List<ITurret>();
-
-            var turrets = new List<ITurret>();
-
-            // Get turrets from main construct
-            List<ConstructableWeapon>? mainWeapons = allConstruct.WeaponryRestricted?.Weapons;
-            if (mainWeapons != null)
-            {
-                foreach (ConstructableWeapon weapon in mainWeapons)
-                {
-                    if (weapon is Turrets turret && turret.IsAlive)
-                    {
-                        turrets.Add(BlockFacadeFactory.GetOrCreateTurretFacade(turret, allConstruct));
-                    }
-                }
-            }
-
-            // Get turrets from subconstructs
-            List<SubConstruct>? subConstructs = allConstruct.AllBasicsRestricted?.SubConstructList;
-            if (subConstructs != null)
-            {
-                foreach (SubConstruct subConstruct in subConstructs)
-                {
-                    if (subConstruct is AllConstruct subAll)
-                    {
-                        List<ConstructableWeapon>? subWeapons = subAll.WeaponryRestricted?.Weapons;
-                        if (subWeapons != null)
-                        {
-                            foreach (ConstructableWeapon weapon in subWeapons)
-                            {
-                                if (weapon is Turrets turret && turret.IsAlive)
-                                {
-                                    turrets.Add(BlockFacadeFactory.GetOrCreateTurretFacade(turret, subAll));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return turrets;
+            return GetAllWeaponFacades()
+                .OfType<ITurret>()
+                .Where(t => t is WeaponFacade wf && WeaponControlAuthority.HasControllingLwc(wf.Weapon))
+                .ToList();
         }
 
         #endregion

@@ -4,6 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
+    <ModDeployDir Condition="'$(ModDeployDir)' == ''">/home/trk20/From The Depths/Mods/FtDSharp</ModDeployDir>
   </PropertyGroup>
 
   <!-- Exclude the CodeGen project folder and decompile reference from compilation -->
@@ -55,14 +56,8 @@
     <Reference Include="Common">
       <HintPath>ftd-managed\Common.dll</HintPath>
     </Reference>
-    <Reference Include="sLua">
-      <HintPath>ftd-managed\sLua.dll</HintPath>
-    </Reference>
-    <Reference Include="sLuaFtd">
-      <HintPath>ftd-managed\sLuaFtd.dll</HintPath>
-    </Reference>
-    <Reference Include="sLuaFtdGenerated">
-      <HintPath>ftd-managed\sLuaFtdGenerated.dll</HintPath>
+    <Reference Include="FtdLua">
+      <HintPath>ftd-managed\FtdLua.dll</HintPath>
     </Reference>
     <Reference Include="Ui">
       <HintPath>ftd-managed\Ui.dll</HintPath>
@@ -80,7 +75,7 @@
       <HintPath>ftd-managed\Profiling.dll</HintPath>
     </Reference>
     <Reference Include="Localisation">
-      <HintPath>..\ftd-managed\Localisation.dll</HintPath>
+      <HintPath>ftd-managed\Localisation.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -103,19 +98,35 @@
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Copy SourceFiles="$(OutputPath)FtDSharp.dll" DestinationFolder="$(ProjectDir)" />
-    <Copy SourceFiles="$(OutputPath)FtDSharp.API.dll" DestinationFolder="$(ProjectDir)" />
-    <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Collections.Immutable.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Reflection.Metadata.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Text.Encoding.CodePages.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Memory.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Runtime.CompilerServices.Unsafe.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Numerics.Vectors.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(OutputPath)System.Threading.Tasks.Extensions.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.BannedApiAnalyzers.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers.dll" DestinationFolder="$(ProjectDir)" ContinueOnError="true" />
+    <MakeDir Directories="$(ModDeployDir)" />
+    <ItemGroup>
+      <_DeployBuildDlls Include="$(OutputPath)FtDSharp.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)FtDSharp.API.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)Microsoft.CodeAnalysis.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)Microsoft.CodeAnalysis.CSharp.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Collections.Immutable.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Reflection.Metadata.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Text.Encoding.CodePages.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Memory.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Runtime.CompilerServices.Unsafe.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Numerics.Vectors.dll" />
+      <_DeployBuildDlls Include="$(OutputPath)System.Threading.Tasks.Extensions.dll" />
+      <_DeployRootFiles Include="$(ProjectDir)plugin.json" />
+      <_DeployRootFiles Include="$(ProjectDir)header.header" />
+      <_DeployRootFiles Include="$(ProjectDir)0Harmony.dll" />
+      <_DeployTipOfTheDay Include="$(ProjectDir)TipOfTheDay\**\*" />
+      <_DeployExampleScripts Include="$(ProjectDir)ExampleScripts\**\*" Exclude="$(ProjectDir)ExampleScripts\bin\**\*;$(ProjectDir)ExampleScripts\obj\**\*" />
+      <_DeployScriptProject Include="$(ProjectDir)ScriptProject\**\*" Exclude="$(ProjectDir)ScriptProject\bin\**\*;$(ProjectDir)ScriptProject\obj\**\*" />
+      <_DeployReferences Include="$(ProjectDir)References\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DeployBuildDlls)" DestinationFolder="$(ModDeployDir)" SkipUnchangedFiles="true" ContinueOnError="true" />
+    <Copy SourceFiles="$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.BannedApiAnalyzers.dll" DestinationFolder="$(ModDeployDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(PkgMicrosoft_CodeAnalysis_BannedApiAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.CSharp.BannedApiAnalyzers.dll" DestinationFolder="$(ModDeployDir)" ContinueOnError="true" />
+    <Copy SourceFiles="@(_DeployRootFiles)" DestinationFolder="$(ModDeployDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_DeployTipOfTheDay)" DestinationFiles="@(_DeployTipOfTheDay->'$(ModDeployDir)\TipOfTheDay\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_DeployTipOfTheDay)' != ''" />
+    <Copy SourceFiles="@(_DeployExampleScripts)" DestinationFiles="@(_DeployExampleScripts->'$(ModDeployDir)\ExampleScripts\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_DeployExampleScripts)' != ''" />
+    <Copy SourceFiles="@(_DeployScriptProject)" DestinationFiles="@(_DeployScriptProject->'$(ModDeployDir)\ScriptProject\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_DeployScriptProject)' != ''" />
+    <Copy SourceFiles="@(_DeployReferences)" DestinationFiles="@(_DeployReferences->'$(ModDeployDir)\References\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_DeployReferences)' != ''" />
   </Target>
 
 </Project>

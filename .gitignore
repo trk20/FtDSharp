@@ -43,6 +43,7 @@ packages/
 *.cache
 dist/
 docs/
+FtDSharp.zip
 
 # OS generated files
 .DS_Store

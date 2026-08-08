@@ -15,6 +15,8 @@
     <Compile Remove="FtDSharp.API\**" />
     <Compile Remove="FtDSharp.CodeGen\**" />
     <None Remove="FtDSharp.CodeGen\**" />
+    <Compile Remove="FtDSharp.Release\**" />
+    <None Remove="FtDSharp.Release\**" />
     <Compile Remove="FtD_Reference\**" />
     <None Remove="FtD_Reference\**" />
     <Compile Remove="dist\**" />

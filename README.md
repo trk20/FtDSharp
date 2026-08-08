@@ -420,7 +420,7 @@ The [`ExampleScripts/`](ExampleScripts/) folder contains working examples demons
    cp ftd-managed/UnityEngine.CoreModule.dll References/
    ```
 
-   (`release.sh` does this automatically for `ScriptProject/`)
+   (`dotnet run --project FtDSharp.Release` does this automatically for `ScriptProject/`)
 
 3. Run the code generator to produce API bindings:
 

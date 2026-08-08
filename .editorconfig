@@ -52,7 +52,7 @@ csharp_style_throw_expression = true:suggestion
 csharp_style_prefer_null_check_over_type_check = true:suggestion
 
 csharp_prefer_braces = false:suggestion
-csharp_style_namespace_declarations = block_scoped:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_using_directive_placement = outside_namespace:suggestion
 
 csharp_new_line_before_open_brace = all

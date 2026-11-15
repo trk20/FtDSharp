@@ -1,11 +1,13 @@
+using System;
 using HarmonyLib;
 
 namespace FtDSharp.Facades
 {
     internal partial class ApsFiringPieceFacade : IApsWeapon
     {
-        private static readonly AccessTools.FieldRef<AdvCannonFiringPiece, float>? RailEnergy =
-            AccessTools.FieldRefAccess<AdvCannonFiringPiece, float>("_railEnergy");
+        private static readonly Func<AdvCannonFiringPiece, float>? RailEnergy =
+            AccessTools.MethodDelegate<Func<AdvCannonFiringPiece, float>>(
+                AccessTools.PropertyGetter(typeof(AdvCannonFiringPiece), "_railEnergy"));
 
         public float Gauge => ((AdvCannonFiringPiece)Weapon).APSShellDiameter * 1000f;
 

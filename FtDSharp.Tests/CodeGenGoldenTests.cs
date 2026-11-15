@@ -53,8 +53,8 @@ public class CodeGenGoldenTests : IClassFixture<CodeGenGoldenTestContext>
             .Where(f => !Path.GetFileName(f).StartsWith("IBlocksProvider", StringComparison.Ordinal))
             .ToList();
 
-        Assert.Equal(275, interfaceFiles.Count);
-        Assert.Equal(275, Directory.GetFiles(_context.FacadeOutputPath, "*Facade.g.cs")
+        Assert.Equal(284, interfaceFiles.Count);
+        Assert.Equal(284, Directory.GetFiles(_context.FacadeOutputPath, "*Facade.g.cs")
             .Count(f => !Path.GetFileName(f).Equals("BlockFactory.g.cs", StringComparison.Ordinal)));
     }
 

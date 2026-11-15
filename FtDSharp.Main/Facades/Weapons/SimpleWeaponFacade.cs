@@ -1,3 +1,4 @@
+using System;
 using HarmonyLib;
 
 namespace FtDSharp.Facades
@@ -8,8 +9,9 @@ namespace FtDSharp.Facades
     /// </summary>
     internal class SimpleWeaponFacade : WeaponFacade, ISimpleWeapon
     {
-        private static readonly AccessTools.FieldRef<WorldWarCannonBase, int>? TotalCapacityRef =
-            AccessTools.FieldRefAccess<WorldWarCannonBase, int>("m_TotalShellsCapacity");
+        private static readonly Func<WorldWarCannonBase, int>? TotalCapacityGetter =
+            AccessTools.MethodDelegate<Func<WorldWarCannonBase, int>>(
+                AccessTools.PropertyGetter(typeof(WorldWarCannonBase), "TotalShellsCapacity"));
 
         public SimpleWeaponFacade(WorldWarCannonBase weapon, AllConstruct allConstruct)
             : base(weapon, allConstruct)
@@ -22,8 +24,8 @@ namespace FtDSharp.Facades
         {
             get
             {
-                if (TotalCapacityRef == null) return 0;
-                return TotalCapacityRef((WorldWarCannonBase)Weapon);
+                if (TotalCapacityGetter == null) return 0;
+                return TotalCapacityGetter((WorldWarCannonBase)Weapon);
             }
         }
     }

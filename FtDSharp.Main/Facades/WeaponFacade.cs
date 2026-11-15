@@ -315,14 +315,17 @@ namespace FtDSharp.Facades
         // These are cached at class level for performance
 
         // APS fields
-        private static readonly AccessTools.FieldRef<AdvCannonFiringPiece, float>? ApsRailEnergy =
-            AccessTools.FieldRefAccess<AdvCannonFiringPiece, float>("_railEnergy");
+        private static readonly Func<AdvCannonFiringPiece, float>? ApsRailEnergy =
+            AccessTools.MethodDelegate<Func<AdvCannonFiringPiece, float>>(
+                AccessTools.PropertyGetter(typeof(AdvCannonFiringPiece), "_railEnergy"));
 
-        // Plasma fields  
-        private static readonly AccessTools.FieldRef<PlasmaMantlet, int>? PlasmaCurrentBurstShots =
-            AccessTools.FieldRefAccess<PlasmaMantlet, int>("_currentBurstShots");
-        private static readonly AccessTools.FieldRef<PlasmaMantletAA, int>? PlasmaAACurrentBurstShots =
-            AccessTools.FieldRefAccess<PlasmaMantletAA, int>("_currentBurstShots");
+        // Plasma fields
+        private static readonly Func<PlasmaMantlet, int>? PlasmaCurrentBurstShots =
+            AccessTools.MethodDelegate<Func<PlasmaMantlet, int>>(
+                AccessTools.PropertyGetter(typeof(PlasmaMantlet), "_currentBurstShots"));
+        private static readonly Func<PlasmaMantlet, int>? PlasmaAACurrentBurstShots =
+            AccessTools.MethodDelegate<Func<PlasmaMantlet, int>>(
+                AccessTools.PropertyGetter(typeof(PlasmaMantlet), "_currentBurstShots"));
 
         // Flamer fields
         private static readonly AccessTools.FieldRef<FlamerMain, float>? FlamerReloadFuelNeeded =

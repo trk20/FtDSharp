@@ -627,9 +627,13 @@ internal sealed class TestAIMainframeBlock : IAIMainframe
     public float AIMainframeTotalGPP => 0f;
     public float AIMainframeTotalGPPFree => 0f;
     public float AIMainframeTotalGPPNeeded => 0f;
+    public float AIMainframeHackingControl => 0f;
+    public float AIMainframeHackingDefence => 0f;
     public bool AttackSalvage { get; set; }
     public float BearingWeighting { get; set; }
     public BrilliantSkies.Ai.FiringType Firing { get; set; }
+    public float HackingControl { get; set; }
+    public float HackingDefence { get; set; }
     public float MinimumDetectionPoints { get; set; }
     public TrackerAssignmentMode Mode => default;
     public BrilliantSkies.Ai.MovementType Movement { get; set; }
